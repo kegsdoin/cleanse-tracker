@@ -468,6 +468,22 @@
             color: white;
         }
 
+        .calendar-day.travel {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .calendar-day.pre-cleanse {
+            background: var(--bg);
+            opacity: 0.7;
+        }
+
+        .calendar-day.shopping {
+            background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
+            color: white;
+            opacity: 1;
+        }
+
         .day-label {
             font-size: 0.7rem;
             color: var(--text-light);
@@ -1899,20 +1915,30 @@
             let html = dayLabels.map(d => `<div class="day-label" style="text-align:center;font-weight:500;">${d}</div>`).join('');
 
             const weeks = [
+                { label: 'Pre-Cleanse (Jan 13-17)', days: [-5, -4, -3, -2, -1, -1, -1], isPreCleanse: true },
                 { label: 'Week 1 (Jan 18-24)', days: [0, 1, 2, 3, 4, 5, 6] },
-                { label: 'Week 2 (Jan 25-29)', days: [7, 8, 9, 10, 11, -1, -1] },
-                { label: '3-Day Fast (Jan 30 - Feb 1)', days: [12, 13, 14, -1, -1, -1, -1] },
-                { label: 'Post-Fast (Feb 2-4)', days: [15, 16, 17, -1, -1, -1, -1] },
-                { label: 'Travel (Feb 5-8)', days: [18, 19, 20, 21, -1, -1, -1] },
-                { label: 'Week 4 (Feb 9-12)', days: [-1, 22, 23, 24, 25, -1, -1] },
-                { label: 'Final Days (Feb 13-16)', days: [26, 27, 28, 29, -1, -1, -1] }
+                { label: 'Week 2 (Jan 25-29)', days: [7, 8, 9, 10, 11, -99, -99] },
+                { label: '3-Day Fast (Jan 30 - Feb 1)', days: [12, 13, 14, -99, -99, -99, -99] },
+                { label: 'Post-Fast (Feb 2-4)', days: [15, 16, 17, -99, -99, -99, -99] },
+                { label: 'Travel (Feb 5-8)', days: [18, 19, 20, 21, -99, -99, -99] },
+                { label: 'Week 4 (Feb 9-12)', days: [-99, 22, 23, 24, 25, -99, -99] },
+                { label: 'Final Days (Feb 13-16)', days: [26, 27, 28, 29, -99, -99, -99] }
             ];
 
             weeks.forEach(week => {
                 html += `<div class="week-label">${week.label}</div>`;
                 week.days.forEach(dayIdx => {
-                    if (dayIdx === -1) {
+                    if (dayIdx === -99) {
                         html += `<div class="calendar-day" style="opacity:0;"></div>`;
+                    } else if (dayIdx < 0 && dayIdx !== -99) {
+                        // Pre-cleanse days
+                        const date = getDateForDay(dayIdx);
+                        let classes = 'calendar-day pre-cleanse';
+                        if (dayIdx === today) classes += ' today';
+                        // Check for shopping task
+                        const shoppingDate = SHOPPING_DATES[dayIdx.toString()];
+                        if (shoppingDate) classes += ' shopping';
+                        html += `<div class="${classes}" title="${formatDate(date)} - Pre-Cleanse"><span>${date.getDate()}</span></div>`;
                     } else {
                         const date = getDateForDay(dayIdx);
                         const meals = state.meals[dayIdx] || {};
@@ -1921,6 +1947,7 @@
                         if (dayIdx === today) classes += ' today';
                         if (dayIdx > today) classes += ' future';
                         if (isFastingDay(dayIdx)) classes += ' fast';
+                        else if (dayIdx >= 18 && dayIdx <= 21) classes += ' travel';
                         else if (mealsComplete === 3) classes += ' completed';
                         else if (mealsComplete > 0) classes += ' partial';
 
