@@ -874,14 +874,8 @@
             </div>
 
             <div class="card" id="remindersCard">
-                <div class="card-title">⚠️ Daily Reminders</div>
-                <ul class="reminder-list">
-                    <li class="reminder-item"><span class="reminder-icon">🕗</span> No eating after 8 PM</li>
-                    <li class="reminder-item"><span class="reminder-icon">🥛</span> Only 1 serving fermented dairy (at dinner)</li>
-                    <li class="reminder-item"><span class="reminder-icon">☕</span> Max 1 cup green tea</li>
-                    <li class="reminder-item"><span class="reminder-icon">🏋️</span> Keep up with CrossFit!</li>
-                    <li class="reminder-item"><span class="reminder-icon">🫒</span> Approved oils: ghee, olive, coconut, avocado, sesame</li>
-                </ul>
+                <div class="card-title">⚠️ <span id="remindersTitle">Daily Reminders</span></div>
+                <ul class="reminder-list" id="remindersList"></ul>
 
                 <div class="settings-section">
                     <h4>Sync ID (use same ID on all devices)</h4>
@@ -1420,6 +1414,32 @@
             renderWaterTracker(dayIndex);
             renderTodayMeals(dayIndex, dayName);
             renderTodayTasks(dayIndex);
+            renderReminders(dayIndex);
+        }
+
+        function renderReminders(dayIndex) {
+            const container = document.getElementById('remindersList');
+            const title = document.getElementById('remindersTitle');
+
+            if (isFastingDay(dayIndex)) {
+                title.textContent = 'Fasting Day Reminders';
+                container.innerHTML = `
+                    <li class="reminder-item"><span class="reminder-icon">💧</span> Stay hydrated - drink plenty of water</li>
+                    <li class="reminder-item"><span class="reminder-icon">🍵</span> Herbal tea is allowed (no caffeine)</li>
+                    <li class="reminder-item"><span class="reminder-icon">🥣</span> Bone or vegetable broth if needed</li>
+                    <li class="reminder-item"><span class="reminder-icon">🧘</span> Rest and light activity only</li>
+                    <li class="reminder-item"><span class="reminder-icon">🙏</span> Use this time for meditation and reflection</li>
+                `;
+            } else {
+                title.textContent = 'Daily Reminders';
+                container.innerHTML = `
+                    <li class="reminder-item"><span class="reminder-icon">🕗</span> No eating after 8 PM</li>
+                    <li class="reminder-item"><span class="reminder-icon">🥛</span> Only 1 serving fermented dairy (at dinner)</li>
+                    <li class="reminder-item"><span class="reminder-icon">☕</span> Max 1 cup green tea</li>
+                    <li class="reminder-item"><span class="reminder-icon">🏋️</span> Keep up with CrossFit!</li>
+                    <li class="reminder-item"><span class="reminder-icon">🫒</span> Approved oils: ghee, olive, coconut, avocado, sesame</li>
+                `;
+            }
         }
 
         function renderMiniCalendar(selectedDayIndex, todayIndex) {
