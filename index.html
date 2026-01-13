@@ -1198,6 +1198,14 @@
             ]
         };
 
+        // Shopping dates mapped to day index (-3 = Jan 15, 0 = Jan 18, etc.)
+        const SHOPPING_DATES = {
+            '-3': 'Wed Jan 15',   // Jan 15 (3 days before cleanse)
+            '0': 'Sat Jan 18',    // Jan 18 (Day 1)
+            '7': 'Sat Jan 25',    // Jan 25 (Day 8)
+            '13': 'Fri Jan 31'    // Jan 31 (during fast, for post-fast)
+        };
+
         const PREP_TASKS = [
             { text: 'Instant Pot: Chickpeas', category: 'Hour 1' },
             { text: 'Instant Pot: Black Beans', category: 'Hour 1' },
@@ -1214,13 +1222,107 @@
         ];
 
         const SHOPPING_TASKS = {
-            'Day A - Tue Jan 14': {
-                title: 'Pantry & Non-Perishables',
-                items: ['Quinoa, Brown Rice, Rolled Oats', 'Dry Chickpeas, Black Beans, Lentils', 'Almond Butter, Tahini, Almonds, Walnuts', 'Olive Oil, Coconut Oil, Avocado Oil, Ghee', 'Vegetable Broth, Diced Tomatoes, Coconut Milk', 'Maple Syrup, Honey, Sea Salt', 'Frozen Berries, Frozen Broccoli', 'Chia Seeds, Ground Flaxseed', 'Spices (cumin, turmeric, curry, paprika, chili)', 'Tamari, Sesame Oil, Apple Cider Vinegar']
+            'Wed Jan 15': {
+                title: 'Pantry & Non-Perishables (Full Cleanse Supply)',
+                items: [
+                    'Quinoa (2 lbs)',
+                    'Brown rice (2 lbs)',
+                    'Rolled oats (2 lbs)',
+                    'Dry chickpeas (2 lbs)',
+                    'Dry black beans (1 lb)',
+                    'Dry red lentils (2 lbs)',
+                    'Dry green/brown lentils (1 lb)',
+                    'Almond butter (2 jars, 16oz each)',
+                    'Tahini (2 jars, 16oz each)',
+                    'Raw almonds (1 lb)',
+                    'Raw walnuts (1 lb)',
+                    'Chia seeds (12oz)',
+                    'Ground flaxseed (16oz)',
+                    'Extra virgin olive oil (750ml)',
+                    'Coconut oil (16oz)',
+                    'Avocado oil (16oz)',
+                    'Ghee (16oz)',
+                    'Sesame oil (8oz)',
+                    'Vegetable broth (6 cartons, 32oz each)',
+                    'Diced tomatoes (4 cans, 14oz each)',
+                    'Coconut milk (4 cans, 14oz each)',
+                    'Maple syrup (12oz)',
+                    'Tamari/soy sauce (16oz)',
+                    'Apple cider vinegar (16oz)',
+                    'Frozen berries (2 bags, 12oz each)',
+                    'Frozen broccoli (2 bags)',
+                    'Cumin, turmeric, curry powder, paprika, chili powder',
+                    'Sea salt, black pepper'
+                ]
             },
-            'Day B - Sat Jan 17': {
-                title: 'Fresh Items + Meal Prep',
-                items: ['Baby Spinach, Broccoli Florets, Kale', 'Sweet Potatoes, Carrots, Bell Peppers', 'Onions, Garlic, Ginger', 'Bananas, Avocados, Lemons', 'Greek Yogurt or Kefir', 'Almond Milk or Oat Milk', 'Zucchini, Cauliflower, Cilantro, Parsley', 'Cherry Tomatoes, Cucumber', 'Firm Tofu (4 blocks)', 'Tempeh (2-3 packages)']
+            'Sat Jan 18': {
+                title: 'Week 1 Fresh Items + Prep Day',
+                items: [
+                    'Baby spinach (2 large containers, 10oz each)',
+                    'Fresh broccoli (2 heads)',
+                    'Kale (1 bunch)',
+                    'Sweet potatoes (6 medium)',
+                    'Carrots (2 lbs)',
+                    'Bell peppers (6 - mixed colors)',
+                    'Yellow onions (3 lbs)',
+                    'Garlic (2 heads)',
+                    'Fresh ginger (4oz)',
+                    'Zucchini (4 medium)',
+                    'Cauliflower (2 heads)',
+                    'Fresh cilantro (2 bunches)',
+                    'Fresh parsley (1 bunch)',
+                    'Cherry tomatoes (2 pints)',
+                    'Cucumber (2)',
+                    'Bananas (7 - one per day)',
+                    'Avocados (7)',
+                    'Lemons (4)',
+                    'Greek yogurt or kefir (32oz)',
+                    'Almond/oat milk (2 cartons, 64oz each)',
+                    'Firm tofu (4 blocks)',
+                    'Tempeh (3 packages)'
+                ]
+            },
+            'Sat Jan 25': {
+                title: 'Week 2 Fresh Items + Prep Day',
+                items: [
+                    'Baby spinach (2 containers, 10oz each)',
+                    'Fresh broccoli (2 heads)',
+                    'Sweet potatoes (4 medium)',
+                    'Carrots (1 lb)',
+                    'Bell peppers (4)',
+                    'Yellow onions (2 lbs)',
+                    'Garlic (1 head)',
+                    'Fresh ginger (2oz)',
+                    'Zucchini (3 medium)',
+                    'Cauliflower (1 head)',
+                    'Fresh cilantro (1 bunch)',
+                    'Cherry tomatoes (1 pint)',
+                    'Bananas (5 - through Wed)',
+                    'Avocados (5)',
+                    'Lemons (2)',
+                    'Greek yogurt or kefir (16oz)',
+                    'Almond/oat milk (1 carton, 64oz)',
+                    'Firm tofu (2 blocks)',
+                    'Tempeh (2 packages)'
+                ]
+            },
+            'Fri Jan 31': {
+                title: 'Post-Fast Recovery (Small Shop)',
+                items: [
+                    'Baby spinach (1 container, 10oz)',
+                    'Fresh broccoli (1 head)',
+                    'Sweet potatoes (3 medium)',
+                    'Bell peppers (3)',
+                    'Yellow onions (1 lb)',
+                    'Fresh cilantro (1 bunch)',
+                    'Bananas (7)',
+                    'Avocados (4)',
+                    'Greek yogurt or kefir (16oz)',
+                    'Almond/oat milk (1 carton)',
+                    'Firm tofu (2 blocks)',
+                    'Tempeh (1 package)',
+                    'Bone broth for fast recovery (2 cartons)'
+                ]
             }
         };
 
@@ -1548,14 +1650,37 @@
         function renderTodayTasks(dayIndex) {
             const container = document.getElementById('todayTasksList');
             const tasks = state.tasks[dayIndex] || {};
-            const allTasks = [...DAILY_TASKS.morning, ...DAILY_TASKS.daily.slice(0, 2)];
+            let html = '';
 
-            container.innerHTML = allTasks.slice(0, 4).map((task, i) => `
+            // Check if this is a shopping day
+            const shoppingDate = SHOPPING_DATES[dayIndex.toString()];
+            if (shoppingDate) {
+                const shoppingData = SHOPPING_TASKS[shoppingDate];
+                html += `<div class="meal-preview">
+                    <input type="checkbox" class="meal-check" ${tasks['shopping'] ? 'checked' : ''} onchange="toggleTaskDashboard(${dayIndex}, 'shopping')">
+                    <span style="font-weight: 600; color: var(--accent-dark);">🛒 Shopping: ${shoppingData.title}</span>
+                </div>`;
+            }
+
+            // Check if this is a prep day (Saturdays during cleanse)
+            const date = getDateForDay(dayIndex);
+            if (date.getDay() === 6 && dayIndex >= 0 && dayIndex < 21 && !isFastingDay(dayIndex)) {
+                html += `<div class="meal-preview">
+                    <input type="checkbox" class="meal-check" ${tasks['mealprep'] ? 'checked' : ''} onchange="toggleTaskDashboard(${dayIndex}, 'mealprep')">
+                    <span style="font-weight: 600; color: var(--primary-dark);">🍳 Meal Prep Day</span>
+                </div>`;
+            }
+
+            // Add regular tasks
+            const allTasks = [...DAILY_TASKS.morning, ...DAILY_TASKS.daily.slice(0, 2)];
+            html += allTasks.slice(0, 3).map((task, i) => `
                 <div class="meal-preview">
                     <input type="checkbox" class="meal-check" ${tasks[`task_${i}`] ? 'checked' : ''} onchange="toggleTaskDashboard(${dayIndex}, 'task_${i}')">
                     <span>${task.text}</span>
                 </div>
             `).join('');
+
+            container.innerHTML = html;
         }
 
         function renderMeals() {
