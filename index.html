@@ -971,7 +971,7 @@
                             transform="rotate(-90 50 50)"/>
                         <text x="50" y="50" text-anchor="middle" dy="0.3em" font-size="20" font-weight="bold" fill="#4a7c59" id="progressText">0%</text>
                     </svg>
-                    <p><strong id="daysCompleted">0</strong> of 30 days completed</p>
+                    <p><strong id="daysCompleted">0</strong> of 22 days completed</p>
                 </div>
             </div>
 
@@ -1225,8 +1225,9 @@
             ]
         };
 
-        // Shopping dates mapped to day index (-3 = Jan 15, 0 = Jan 18, etc.)
+        // Shopping dates mapped to day index (-4 = Jan 14, -3 = Jan 15, 0 = Jan 18, etc.)
         const SHOPPING_DATES = {
+            '-4': 'Tue Jan 14',   // Jan 14 (4 days before cleanse)
             '-3': 'Wed Jan 15',   // Jan 15 (3 days before cleanse)
             '0': 'Sat Jan 18',    // Jan 18 (Day 1)
             '7': 'Sat Jan 25',    // Jan 25 (Day 8)
@@ -1251,6 +1252,24 @@
         ];
 
         const SHOPPING_TASKS = {
+            'Tue Jan 14': {
+                title: 'Fresh Produce & Refrigerated Items',
+                items: [
+                    'Firm tofu (4 blocks)',
+                    'Tempeh (3 packages)',
+                    'Greek yogurt or kefir (32oz)',
+                    'Almond/oat milk (2 cartons)',
+                    'Fresh ginger root (large piece)',
+                    'Fresh garlic (2 heads)',
+                    'Lemons (6)',
+                    'Limes (4)',
+                    'Bananas (bunch of 6)',
+                    'Avocados (6)',
+                    'Baby spinach (2 containers, 10oz each)',
+                    'Fresh cilantro (2 bunches)',
+                    'Fresh parsley (1 bunch)'
+                ]
+            },
             'Wed Jan 15': {
                 title: 'Pantry & Non-Perishables (Full Cleanse Supply)',
                 items: [
@@ -1548,7 +1567,7 @@
 
             document.getElementById('todayDate').textContent = formatDate(viewingDate);
             document.getElementById('dayNumber').textContent = dayNum;
-            document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 30';
+            document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 22';
             document.getElementById('phaseBadge').textContent = getCurrentPhase(viewingDate);
 
             // Hide calories and meals stats during pre-cleanse
@@ -1636,10 +1655,11 @@
                 let classes = 'mini-cal-day pre-cleanse';
                 if (i === selectedDayIndex) classes += ' selected';
                 if (i === todayIndex) classes += ' today-marker';
-                // Shopping day is Jan 15 (day -3)
-                if (i === -3) classes += ' shopping';
+                // Shopping days: Jan 14 (day -4) and Jan 15 (day -3)
+                const isShoppingDay = SHOPPING_DATES[i.toString()];
+                if (isShoppingDay) classes += ' shopping';
 
-                const label = i === -3 ? 'Pre-cleanse - Shopping' : 'Pre-cleanse';
+                const label = isShoppingDay ? 'Pre-cleanse - Shopping' : 'Pre-cleanse';
                 html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="${label}: ${formatDate(date)}">${date.getDate()}</div>`;
             }
 
