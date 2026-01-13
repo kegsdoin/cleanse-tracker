@@ -731,6 +731,12 @@
             opacity: 0.5;
         }
 
+        .mini-cal-day.shopping {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: #333;
+            opacity: 1;
+        }
+
         .water-tracker {
             display: flex;
             gap: 0.5rem;
@@ -1615,15 +1621,29 @@
 
             let html = dayLabels.map(d => `<div class="mini-cal-header">${d}</div>`).join('');
 
-            // Show days from Jan 18 (day 0) to Feb 7 (day 20)
+            // Show days from Jan 13 (day -5) to Feb 16 (day 29)
             // First, add empty cells to align with the correct day of week
-            const firstDate = getDateForDay(0); // Jan 18
-            const firstDayOfWeek = firstDate.getDay(); // 0 = Sunday
+            const firstDate = getDateForDay(-5); // Jan 13
+            const firstDayOfWeek = firstDate.getDay(); // 0 = Sunday, Jan 13 is Monday (1)
 
             for (let i = 0; i < firstDayOfWeek; i++) {
-                html += '<div class="mini-cal-day pre-cleanse" style="opacity: 0.3;"></div>';
+                html += '<div class="mini-cal-day" style="opacity: 0;"></div>';
             }
 
+            // Pre-cleanse days: -5 to -1 (Jan 13-17)
+            for (let i = -5; i < 0; i++) {
+                const date = getDateForDay(i);
+                let classes = 'mini-cal-day pre-cleanse';
+                if (i === selectedDayIndex) classes += ' selected';
+                if (i === todayIndex) classes += ' today-marker';
+                // Shopping day is Jan 15 (day -3)
+                if (i === -3) classes += ' shopping';
+
+                const label = i === -3 ? 'Pre-cleanse - Shopping' : 'Pre-cleanse';
+                html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="${label}: ${formatDate(date)}">${date.getDate()}</div>`;
+            }
+
+            // Cleanse days: 0 to 29 (Jan 18 - Feb 16)
             for (let i = 0; i < 30; i++) {
                 const date = getDateForDay(i);
                 const meals = state.meals[i] || {};
