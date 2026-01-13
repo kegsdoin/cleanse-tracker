@@ -761,11 +761,11 @@
                         <div class="stat-value" id="dayNumber">1</div>
                         <div class="stat-label" id="dayLabel">Day of 21</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" id="caloriesCard">
                         <div class="stat-value" id="caloriesConsumed">0</div>
                         <div class="stat-label">Calories / 2500</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" id="mealsCard">
                         <div class="stat-value" id="mealsCompleted">0/3</div>
                         <div class="stat-label">Meals Done</div>
                     </div>
@@ -781,7 +781,7 @@
                 <div class="water-tracker" id="waterTracker"></div>
             </div>
 
-            <div class="card">
+            <div class="card" id="todayInfoCard">
                 <div class="card-title">📅 Today - <span id="todayDate"></span></div>
                 <div class="today-info">
                     <div class="today-meals">
@@ -795,7 +795,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" id="remindersCard">
                 <div class="card-title">⚠️ Daily Reminders</div>
                 <ul class="reminder-list">
                     <li class="reminder-item"><span class="reminder-icon">🕗</span> No eating after 8 PM</li>
@@ -1290,6 +1290,12 @@
             document.getElementById('dayNumber').textContent = dayNum;
             document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 21';
             document.getElementById('phaseBadge').textContent = getCurrentPhase(today);
+
+            // Hide calories and meals stats during pre-cleanse
+            document.getElementById('caloriesCard').classList.toggle('hidden', isPreCleanse);
+            document.getElementById('mealsCard').classList.toggle('hidden', isPreCleanse);
+            document.getElementById('todayInfoCard').classList.toggle('hidden', isPreCleanse);
+            document.getElementById('remindersCard').classList.toggle('hidden', isPreCleanse);
 
             const todayMeals = state.meals[dayIndex] || {};
             const mealsCount = [todayMeals.breakfast, todayMeals.lunch, todayMeals.dinner].filter(Boolean).length;
