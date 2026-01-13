@@ -644,6 +644,72 @@
             display: none !important;
         }
 
+        .day-nav-buttons {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .day-nav-buttons .btn {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+        }
+
+        .mini-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.3rem;
+        }
+
+        .mini-cal-header {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-light);
+            font-weight: 500;
+            padding: 0.2rem;
+        }
+
+        .mini-cal-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .mini-cal-day:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        .mini-cal-day.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+
+        .mini-cal-day.today-marker {
+            border-color: var(--accent);
+        }
+
+        .mini-cal-day.completed {
+            background: var(--success);
+            color: white;
+        }
+
+        .mini-cal-day.fast {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mini-cal-day.pre-cleanse {
+            opacity: 0.5;
+        }
+
         .water-tracker {
             display: flex;
             gap: 0.5rem;
@@ -755,7 +821,14 @@
         <!-- Dashboard Tab -->
         <section id="dashboard" class="tab-content">
             <div class="card">
-                <div class="card-title">📊 Today's Overview</div>
+                <div class="card-title" style="justify-content: space-between;">
+                    <span>📊 <span id="dashboardDateLabel">Today's Overview</span></span>
+                    <div class="day-nav-buttons">
+                        <button class="btn btn-small btn-outline" id="prevDayBtn" onclick="navigateDashboardDay(-1)">← Prev</button>
+                        <button class="btn btn-small btn-outline" id="todayBtn" onclick="goToTodayDashboard()">Today</button>
+                        <button class="btn btn-small btn-outline" id="nextDayBtn" onclick="navigateDashboardDay(1)">Next →</button>
+                    </div>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value" id="dayNumber">1</div>
@@ -777,12 +850,17 @@
             </div>
 
             <div class="card">
+                <div class="card-title">📅 Quick Calendar</div>
+                <div class="mini-calendar" id="miniCalendar"></div>
+            </div>
+
+            <div class="card">
                 <div class="card-title">💧 Water Intake (8 glasses)</div>
                 <div class="water-tracker" id="waterTracker"></div>
             </div>
 
             <div class="card" id="todayInfoCard">
-                <div class="card-title">📅 Today - <span id="todayDate"></span></div>
+                <div class="card-title">📋 <span id="todayDate"></span></div>
                 <div class="today-info">
                     <div class="today-meals">
                         <h4>Today's Meals</h4>
@@ -1177,6 +1255,7 @@
         let state = {
             currentTab: 'dashboard',
             selectedDay: 0,
+            dashboardDay: null, // null means "today"
             meals: {},
             tasks: {},
             prepTasks: {},
@@ -1280,16 +1359,30 @@
         // RENDER FUNCTIONS
         // =====================================================
         function renderDashboard() {
-            const today = new Date();
-            const dayIndex = getDayOfCleanse(today);
+            const realToday = new Date();
+            const realTodayIndex = getDayOfCleanse(realToday);
+
+            // Use dashboardDay if set, otherwise use real today
+            const dayIndex = state.dashboardDay !== null ? state.dashboardDay : realTodayIndex;
+            const viewingDate = getDateForDay(dayIndex);
+            const isViewingToday = state.dashboardDay === null || state.dashboardDay === realTodayIndex;
+
             const isPreCleanse = dayIndex < 0;
             const daysUntilStart = isPreCleanse ? Math.abs(dayIndex) : 0;
             const dayNum = isPreCleanse ? daysUntilStart : Math.min(21, dayIndex + 1);
 
-            document.getElementById('todayDate').textContent = formatDate(today);
+            // Update header label
+            const dateLabel = document.getElementById('dashboardDateLabel');
+            if (isViewingToday) {
+                dateLabel.textContent = "Today's Overview";
+            } else {
+                dateLabel.textContent = formatDate(viewingDate);
+            }
+
+            document.getElementById('todayDate').textContent = formatDate(viewingDate);
             document.getElementById('dayNumber').textContent = dayNum;
             document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 21';
-            document.getElementById('phaseBadge').textContent = getCurrentPhase(today);
+            document.getElementById('phaseBadge').textContent = getCurrentPhase(viewingDate);
 
             // Hide calories and meals stats during pre-cleanse
             document.getElementById('caloriesCard').classList.toggle('hidden', isPreCleanse);
@@ -1297,12 +1390,18 @@
             document.getElementById('todayInfoCard').classList.toggle('hidden', isPreCleanse);
             document.getElementById('remindersCard').classList.toggle('hidden', isPreCleanse);
 
+            // Update nav button states
+            document.getElementById('todayBtn').classList.toggle('btn-primary', !isViewingToday);
+            document.getElementById('todayBtn').classList.toggle('btn-outline', isViewingToday);
+            document.getElementById('prevDayBtn').disabled = dayIndex <= -7; // Allow viewing up to 7 days before cleanse
+            document.getElementById('nextDayBtn').disabled = dayIndex >= 20; // Day 21 is index 20
+
             const todayMeals = state.meals[dayIndex] || {};
             const mealsCount = [todayMeals.breakfast, todayMeals.lunch, todayMeals.dinner].filter(Boolean).length;
             document.getElementById('mealsCompleted').textContent = `${mealsCount}/3`;
 
             let calories = 0;
-            const dayName = getDayName(today);
+            const dayName = getDayName(viewingDate);
             const breakfast = getBreakfastForDay(dayIndex);
             const lunch = getLunchForDay(dayIndex);
             const dinner = getDinnerForDay(dayIndex);
@@ -1317,9 +1416,64 @@
             const todayTasks = state.tasks[dayIndex] || {};
             document.getElementById('tasksCompleted').textContent = Object.values(todayTasks).filter(Boolean).length;
 
+            renderMiniCalendar(dayIndex, realTodayIndex);
             renderWaterTracker(dayIndex);
             renderTodayMeals(dayIndex, dayName);
             renderTodayTasks(dayIndex);
+        }
+
+        function renderMiniCalendar(selectedDayIndex, todayIndex) {
+            const container = document.getElementById('miniCalendar');
+            const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+            let html = dayLabels.map(d => `<div class="mini-cal-header">${d}</div>`).join('');
+
+            // Show days from Jan 18 (day 0) to Feb 7 (day 20)
+            // First, add empty cells to align with the correct day of week
+            const firstDate = getDateForDay(0); // Jan 18
+            const firstDayOfWeek = firstDate.getDay(); // 0 = Sunday
+
+            for (let i = 0; i < firstDayOfWeek; i++) {
+                html += '<div class="mini-cal-day pre-cleanse" style="opacity: 0.3;"></div>';
+            }
+
+            for (let i = 0; i < 21; i++) {
+                const date = getDateForDay(i);
+                const meals = state.meals[i] || {};
+                const mealsComplete = [meals.breakfast, meals.lunch, meals.dinner].filter(Boolean).length;
+
+                let classes = 'mini-cal-day';
+                if (i === selectedDayIndex) classes += ' selected';
+                if (i === todayIndex) classes += ' today-marker';
+                if (isFastingDay(i)) classes += ' fast';
+                else if (mealsComplete === 3) classes += ' completed';
+
+                html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="Day ${i + 1}: ${formatDate(date)}">${date.getDate()}</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function navigateDashboardDay(delta) {
+            const realTodayIndex = getDayOfCleanse(new Date());
+            const currentDay = state.dashboardDay !== null ? state.dashboardDay : realTodayIndex;
+            const newDay = currentDay + delta;
+
+            if (newDay >= -7 && newDay <= 20) {
+                state.dashboardDay = newDay;
+                renderDashboard();
+            }
+        }
+
+        function goToTodayDashboard() {
+            state.dashboardDay = null;
+            renderDashboard();
+        }
+
+        function selectDashboardDay(dayIndex) {
+            const realTodayIndex = getDayOfCleanse(new Date());
+            state.dashboardDay = dayIndex === realTodayIndex ? null : dayIndex;
+            renderDashboard();
         }
 
         function renderWaterTracker(dayIndex) {
