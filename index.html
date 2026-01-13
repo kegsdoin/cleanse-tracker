@@ -971,7 +971,7 @@
                             transform="rotate(-90 50 50)"/>
                         <text x="50" y="50" text-anchor="middle" dy="0.3em" font-size="20" font-weight="bold" fill="#4a7c59" id="progressText">0%</text>
                     </svg>
-                    <p><strong id="daysCompleted">0</strong> of 22 days completed</p>
+                    <p><strong id="daysCompleted">0</strong> of 21 days completed</p>
                 </div>
             </div>
 
@@ -1108,7 +1108,7 @@
         // =====================================================
         // DATA
         // =====================================================
-        const CLEANSE_START = new Date('2026-01-18');
+        const CLEANSE_START = new Date('2026-01-17'); // Day 0 is Jan 17, Day 1 is Jan 18
 
         const BREAKFAST_OPTIONS = [
             { id: 'oatmeal', name: 'Fat-Dense Oatmeal Bowl', calories: 850 },
@@ -1225,15 +1225,15 @@
             ]
         };
 
-        // Shopping dates mapped to day index (-4 = Jan 14, -3 = Jan 15, 0 = Jan 18, etc.)
+        // Shopping dates mapped to day index (Jan 17 = day 0, Jan 18 = day 1)
         const SHOPPING_DATES = {
-            '-4': 'Tue Jan 14',   // Jan 14 (4 days before cleanse)
-            '-3': 'Wed Jan 15',   // Jan 15 (3 days before cleanse)
-            '0': 'Sat Jan 18',    // Jan 18 (Day 1)
-            '7': 'Sat Jan 25',    // Jan 25 (Day 8)
-            '13': 'Fri Jan 31',   // Jan 31 (during fast, for post-fast)
-            '17': 'Wed Feb 4',    // Feb 4 (prep for travel Feb 5-8)
-            '25': 'Wed Feb 12'    // Feb 12 (for final days Feb 13-16)
+            '-3': 'Tue Jan 14',   // Jan 14 (3 days before day 0)
+            '-2': 'Wed Jan 15',   // Jan 15 (2 days before day 0)
+            '1': 'Sat Jan 18',    // Jan 18 (Day 1)
+            '8': 'Sat Jan 25',    // Jan 25 (Day 8)
+            '14': 'Fri Jan 31',   // Jan 31 (during fast, for post-fast)
+            '18': 'Wed Feb 4',    // Feb 4 (prep for travel Feb 5-8)
+            '26': 'Wed Feb 12'    // Feb 12 (for final days Feb 13-16)
         };
 
         const PREP_TASKS = [
@@ -1504,8 +1504,8 @@
         }
 
         function isFastingDay(dayIndex) {
-            // 3-day fast: Jan 30 (day 12), Jan 31 (day 13), Feb 1 (day 14)
-            return dayIndex >= 12 && dayIndex < 15;
+            // 3-day fast: Jan 30 (day 13), Jan 31 (day 14), Feb 1 (day 15)
+            return dayIndex >= 13 && dayIndex < 16;
         }
 
         function getBreakfastForDay(dayIndex) {
@@ -1555,7 +1555,7 @@
 
             const isPreCleanse = dayIndex < 0;
             const daysUntilStart = isPreCleanse ? Math.abs(dayIndex) : 0;
-            const dayNum = isPreCleanse ? daysUntilStart : Math.min(30, dayIndex + 1);
+            const dayNum = isPreCleanse ? daysUntilStart : dayIndex; // Day 0 = Jan 17, Day 1 = Jan 18, etc.
 
             // Update header label
             const dateLabel = document.getElementById('dashboardDateLabel');
@@ -1567,7 +1567,7 @@
 
             document.getElementById('todayDate').textContent = formatDate(viewingDate);
             document.getElementById('dayNumber').textContent = dayNum;
-            document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 22';
+            document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 21';
             document.getElementById('phaseBadge').textContent = getCurrentPhase(viewingDate);
 
             // Hide calories and meals stats during pre-cleanse
@@ -1640,22 +1640,22 @@
 
             let html = dayLabels.map(d => `<div class="mini-cal-header">${d}</div>`).join('');
 
-            // Show days from Jan 13 (day -5) to Feb 16 (day 29)
+            // Show days from Jan 13 (day -4) to Feb 6 (day 20) - 21 day cleanse
             // First, add empty cells to align with the correct day of week
-            const firstDate = getDateForDay(-5); // Jan 13
+            const firstDate = getDateForDay(-4); // Jan 13
             const firstDayOfWeek = firstDate.getDay(); // 0 = Sunday, Jan 13 is Monday (1)
 
             for (let i = 0; i < firstDayOfWeek; i++) {
                 html += '<div class="mini-cal-day" style="opacity: 0;"></div>';
             }
 
-            // Pre-cleanse days: -5 to -1 (Jan 13-17)
-            for (let i = -5; i < 0; i++) {
+            // Pre-cleanse days: -4 to -1 (Jan 13-16)
+            for (let i = -4; i < 0; i++) {
                 const date = getDateForDay(i);
                 let classes = 'mini-cal-day pre-cleanse';
                 if (i === selectedDayIndex) classes += ' selected';
                 if (i === todayIndex) classes += ' today-marker';
-                // Shopping days: Jan 14 (day -4) and Jan 15 (day -3)
+                // Shopping days: Jan 14 (day -3) and Jan 15 (day -2)
                 const isShoppingDay = SHOPPING_DATES[i.toString()];
                 if (isShoppingDay) classes += ' shopping';
 
@@ -1663,8 +1663,9 @@
                 html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="${label}: ${formatDate(date)}">${date.getDate()}</div>`;
             }
 
-            // Cleanse days: 0 to 29 (Jan 18 - Feb 16)
-            for (let i = 0; i < 30; i++) {
+            // Cleanse days: 0 to 30 (Jan 17 - Feb 16)
+            // Day 0 = Jan 17 (prep), Day 1 = Jan 18, ... Day 21 = Feb 7
+            for (let i = 0; i < 31; i++) {
                 const date = getDateForDay(i);
                 const meals = state.meals[i] || {};
                 const mealsComplete = [meals.breakfast, meals.lunch, meals.dinner].filter(Boolean).length;
@@ -1673,10 +1674,11 @@
                 if (i === selectedDayIndex) classes += ' selected';
                 if (i === todayIndex) classes += ' today-marker';
                 if (isFastingDay(i)) classes += ' fast';
-                else if (i >= 18 && i <= 21) classes += ' travel'; // Travel days Feb 5-8
+                else if (i >= 19 && i <= 22) classes += ' travel'; // Travel days Feb 5-8
                 else if (mealsComplete === 3) classes += ' completed';
 
-                html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="Day ${i + 1}: ${formatDate(date)}">${date.getDate()}</div>`;
+                const dayLabel = i === 0 ? 'Day 0 (Prep)' : `Day ${i}`;
+                html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="${dayLabel}: ${formatDate(date)}">${date.getDate()}</div>`;
             }
 
             container.innerHTML = html;
@@ -1987,7 +1989,7 @@
                         if (dayIdx === today) classes += ' today';
                         if (dayIdx > today) classes += ' future';
                         if (isFastingDay(dayIdx)) classes += ' fast';
-                        else if (dayIdx >= 18 && dayIdx <= 21) classes += ' travel';
+                        else if (dayIdx >= 19 && dayIdx <= 22) classes += ' travel';
                         else if (mealsComplete === 3) classes += ' completed';
                         else if (mealsComplete > 0) classes += ' partial';
 
