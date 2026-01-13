@@ -706,6 +706,11 @@
             color: white;
         }
 
+        .mini-cal-day.travel {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
         .mini-cal-day.pre-cleanse {
             opacity: 0.5;
         }
@@ -944,7 +949,7 @@
                             transform="rotate(-90 50 50)"/>
                         <text x="50" y="50" text-anchor="middle" dy="0.3em" font-size="20" font-weight="bold" fill="#4a7c59" id="progressText">0%</text>
                     </svg>
-                    <p><strong id="daysCompleted">0</strong> of 21 days completed</p>
+                    <p><strong id="daysCompleted">0</strong> of 30 days completed</p>
                 </div>
             </div>
 
@@ -1203,7 +1208,9 @@
             '-3': 'Wed Jan 15',   // Jan 15 (3 days before cleanse)
             '0': 'Sat Jan 18',    // Jan 18 (Day 1)
             '7': 'Sat Jan 25',    // Jan 25 (Day 8)
-            '13': 'Fri Jan 31'    // Jan 31 (during fast, for post-fast)
+            '13': 'Fri Jan 31',   // Jan 31 (during fast, for post-fast)
+            '17': 'Wed Feb 4',    // Feb 4 (prep for travel Feb 5-8)
+            '25': 'Wed Feb 12'    // Feb 12 (for final days Feb 13-16)
         };
 
         const PREP_TASKS = [
@@ -1315,13 +1322,52 @@
                     'Bell peppers (3)',
                     'Yellow onions (1 lb)',
                     'Fresh cilantro (1 bunch)',
-                    'Bananas (7)',
-                    'Avocados (4)',
+                    'Bananas (4 - through Tue)',
+                    'Avocados (3)',
                     'Greek yogurt or kefir (16oz)',
                     'Almond/oat milk (1 carton)',
                     'Firm tofu (2 blocks)',
                     'Tempeh (1 package)',
                     'Bone broth for fast recovery (2 cartons)'
+                ]
+            },
+            'Wed Feb 4': {
+                title: 'Travel Prep (Feb 5-8)',
+                items: [
+                    '--- PACK FOR TRAVEL ---',
+                    'Overnight oats jars (4 - pre-made)',
+                    'Almond butter packets (8)',
+                    'Trail mix bags (4 - almonds, walnuts, dried fruit)',
+                    'Chia seed packets (4)',
+                    'Protein bars (cleanse-approved, 4-6)',
+                    'Bananas (4 - travel-friendly)',
+                    'Apples (4)',
+                    '--- COOLER/CARRY-ON ---',
+                    'Pre-made Buddha bowls (2-3, for travel day)',
+                    'Hummus cups (4)',
+                    'Cut veggies (carrots, celery, peppers)',
+                    'Greek yogurt cups (4)',
+                    '--- AT DESTINATION ---',
+                    'Find local grocery for fresh produce',
+                    'Avocados, bananas, spinach for smoothies',
+                    'Restaurant options: grain bowls, salads, veggie stir-fry'
+                ]
+            },
+            'Wed Feb 12': {
+                title: 'Final Days (Feb 13-16)',
+                items: [
+                    'Baby spinach (1 container, 10oz)',
+                    'Fresh broccoli (1 head)',
+                    'Sweet potatoes (3 medium)',
+                    'Bell peppers (3)',
+                    'Yellow onions (1 lb)',
+                    'Fresh cilantro (1 bunch)',
+                    'Bananas (4)',
+                    'Avocados (4)',
+                    'Greek yogurt or kefir (16oz)',
+                    'Almond/oat milk (1 carton)',
+                    'Firm tofu (2 blocks)',
+                    'Tempeh (1 package)'
                 ]
             }
         };
@@ -1410,7 +1456,10 @@
             if (day < 7) return 'Week 1 - Plant-Based Diet';
             if (day < 12) return 'Week 2 - Continue Diet';
             if (day < 15) return '3-Day Fast';
-            return 'Final Phase - Return to Diet';
+            if (day < 18) return 'Post-Fast Recovery';
+            if (day < 22) return 'Travel Days';
+            if (day < 26) return 'Week 4 - Continue Diet';
+            return 'Final Days';
         }
 
         function isFastingDay(dayIndex) {
@@ -1465,7 +1514,7 @@
 
             const isPreCleanse = dayIndex < 0;
             const daysUntilStart = isPreCleanse ? Math.abs(dayIndex) : 0;
-            const dayNum = isPreCleanse ? daysUntilStart : Math.min(21, dayIndex + 1);
+            const dayNum = isPreCleanse ? daysUntilStart : Math.min(30, dayIndex + 1);
 
             // Update header label
             const dateLabel = document.getElementById('dashboardDateLabel');
@@ -1477,7 +1526,7 @@
 
             document.getElementById('todayDate').textContent = formatDate(viewingDate);
             document.getElementById('dayNumber').textContent = dayNum;
-            document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 21';
+            document.getElementById('dayLabel').textContent = isPreCleanse ? 'Days to Start' : 'Day of 30';
             document.getElementById('phaseBadge').textContent = getCurrentPhase(viewingDate);
 
             // Hide calories and meals stats during pre-cleanse
@@ -1490,7 +1539,7 @@
             document.getElementById('todayBtn').classList.toggle('btn-primary', !isViewingToday);
             document.getElementById('todayBtn').classList.toggle('btn-outline', isViewingToday);
             document.getElementById('prevDayBtn').disabled = dayIndex <= -7; // Allow viewing up to 7 days before cleanse
-            document.getElementById('nextDayBtn').disabled = dayIndex >= 20; // Day 21 is index 20
+            document.getElementById('nextDayBtn').disabled = dayIndex >= 29; // Day 30 is index 29
 
             const todayMeals = state.meals[dayIndex] || {};
             const mealsCount = [todayMeals.breakfast, todayMeals.lunch, todayMeals.dinner].filter(Boolean).length;
@@ -1559,7 +1608,7 @@
                 html += '<div class="mini-cal-day pre-cleanse" style="opacity: 0.3;"></div>';
             }
 
-            for (let i = 0; i < 21; i++) {
+            for (let i = 0; i < 30; i++) {
                 const date = getDateForDay(i);
                 const meals = state.meals[i] || {};
                 const mealsComplete = [meals.breakfast, meals.lunch, meals.dinner].filter(Boolean).length;
@@ -1568,6 +1617,7 @@
                 if (i === selectedDayIndex) classes += ' selected';
                 if (i === todayIndex) classes += ' today-marker';
                 if (isFastingDay(i)) classes += ' fast';
+                else if (i >= 18 && i <= 21) classes += ' travel'; // Travel days Feb 5-8
                 else if (mealsComplete === 3) classes += ' completed';
 
                 html += `<div class="${classes}" onclick="selectDashboardDay(${i})" title="Day ${i + 1}: ${formatDate(date)}">${date.getDate()}</div>`;
@@ -1581,7 +1631,7 @@
             const currentDay = state.dashboardDay !== null ? state.dashboardDay : realTodayIndex;
             const newDay = currentDay + delta;
 
-            if (newDay >= -7 && newDay <= 20) {
+            if (newDay >= -7 && newDay <= 29) {
                 state.dashboardDay = newDay;
                 renderDashboard();
             }
@@ -1664,7 +1714,7 @@
 
             // Check if this is a prep day (Saturdays during cleanse)
             const date = getDateForDay(dayIndex);
-            if (date.getDay() === 6 && dayIndex >= 0 && dayIndex < 21 && !isFastingDay(dayIndex)) {
+            if (date.getDay() === 6 && dayIndex >= 0 && dayIndex < 30 && !isFastingDay(dayIndex)) {
                 html += `<div class="meal-preview">
                     <input type="checkbox" class="meal-check" ${tasks['mealprep'] ? 'checked' : ''} onchange="toggleTaskDashboard(${dayIndex}, 'mealprep')">
                     <span style="font-weight: 600; color: var(--primary-dark);">🍳 Meal Prep Day</span>
@@ -1687,7 +1737,7 @@
             const selector = document.getElementById('daySelector');
             selector.innerHTML = '';
 
-            for (let i = 0; i < 21; i++) {
+            for (let i = 0; i < 30; i++) {
                 const dayMeals = state.meals[i] || {};
                 const allDone = dayMeals.breakfast && dayMeals.lunch && dayMeals.dinner;
                 const btn = document.createElement('button');
@@ -1820,7 +1870,7 @@
 
         function renderProgress() {
             const completedDays = countCompletedDays();
-            const progress = Math.round((completedDays / 21) * 100);
+            const progress = Math.round((completedDays / 30) * 100);
 
             const circle = document.getElementById('progressCircle');
             circle.style.strokeDashoffset = 283 - (progress / 100) * 283;
@@ -1834,7 +1884,7 @@
 
         function countCompletedDays() {
             let count = 0;
-            for (let i = 0; i < 21; i++) {
+            for (let i = 0; i < 30; i++) {
                 const meals = state.meals[i] || {};
                 if (meals.breakfast && meals.lunch && meals.dinner) count++;
                 else if (isFastingDay(i)) count++;
@@ -1852,7 +1902,10 @@
                 { label: 'Week 1 (Jan 18-24)', days: [0, 1, 2, 3, 4, 5, 6] },
                 { label: 'Week 2 (Jan 25-29)', days: [7, 8, 9, 10, 11, -1, -1] },
                 { label: '3-Day Fast (Jan 30 - Feb 1)', days: [12, 13, 14, -1, -1, -1, -1] },
-                { label: 'Final Phase (Feb 2-7)', days: [15, 16, 17, 18, 19, 20, -1] }
+                { label: 'Post-Fast (Feb 2-4)', days: [15, 16, 17, -1, -1, -1, -1] },
+                { label: 'Travel (Feb 5-8)', days: [18, 19, 20, 21, -1, -1, -1] },
+                { label: 'Week 4 (Feb 9-12)', days: [-1, 22, 23, 24, 25, -1, -1] },
+                { label: 'Final Days (Feb 13-16)', days: [26, 27, 28, 29, -1, -1, -1] }
             ];
 
             weeks.forEach(week => {
@@ -1914,9 +1967,10 @@
             const achievements = [
                 { icon: '🌱', name: 'Day 1 Complete', earned: completedDays >= 1 },
                 { icon: '🌿', name: 'First Week Done', earned: completedDays >= 7 },
-                { icon: '💪', name: 'Halfway There', earned: completedDays >= 11 },
-                { icon: '🧘', name: 'Fast Completed', earned: today >= 17 },
-                { icon: '🏆', name: 'Cleanse Master', earned: completedDays >= 21 }
+                { icon: '💪', name: 'Halfway There', earned: completedDays >= 15 },
+                { icon: '🧘', name: 'Fast Completed', earned: today >= 15 },
+                { icon: '✈️', name: 'Travel Survived', earned: completedDays >= 22 },
+                { icon: '🏆', name: 'Cleanse Master', earned: completedDays >= 30 }
             ];
 
             document.getElementById('achievements').innerHTML = achievements.map(a => `
