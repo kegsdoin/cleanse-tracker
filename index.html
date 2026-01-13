@@ -1234,12 +1234,13 @@
             if (day < 0) return 'Pre-Cleanse';
             if (day < 7) return 'Week 1 - Plant-Based Diet';
             if (day < 12) return 'Week 2 - Continue Diet';
-            if (day < 17) return 'Central Fast';
-            return 'Final Phase';
+            if (day < 15) return '3-Day Fast';
+            return 'Final Phase - Return to Diet';
         }
 
         function isFastingDay(dayIndex) {
-            return dayIndex >= 12 && dayIndex < 17;
+            // 3-day fast: Jan 30 (day 12), Jan 31 (day 13), Feb 1 (day 14)
+            return dayIndex >= 12 && dayIndex < 15;
         }
 
         function getBreakfastForDay(dayIndex) {
@@ -1542,8 +1543,8 @@
             const weeks = [
                 { label: 'Week 1 (Jan 18-24)', days: [0, 1, 2, 3, 4, 5, 6] },
                 { label: 'Week 2 (Jan 25-29)', days: [7, 8, 9, 10, 11, -1, -1] },
-                { label: 'Fast (Jan 30 - Feb 3)', days: [12, 13, 14, 15, 16, -1, -1] },
-                { label: 'Final (Feb 4-8)', days: [17, 18, 19, 20, -1, -1, -1] }
+                { label: '3-Day Fast (Jan 30 - Feb 1)', days: [12, 13, 14, -1, -1, -1, -1] },
+                { label: 'Final Phase (Feb 2-7)', days: [15, 16, 17, 18, 19, 20, -1] }
             ];
 
             weeks.forEach(week => {
