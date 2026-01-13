@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enlightenment Cleanse Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary: #4a7c59;
+            --primary-light: #6b9b7a;
+            --primary-dark: #3a6249;
+            --accent: #f4a261;
+            --accent-dark: #e76f51;
+            --bg: #f8f6f3;
+            --card-bg: #ffffff;
+            --text: #2d3436;
+            --text-light: #636e72;
+            --border: #dfe6e9;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #e17055;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .phase-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .sync-status {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00b894;
+        }
+
+        .sync-dot.syncing {
+            background: #fdcb6e;
+            animation: pulse 1s infinite;
+        }
+
+        .sync-dot.offline {
+            background: #e17055;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .nav {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            background: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg);
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1.2rem;
+            background: var(--bg);
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 0.3rem;
+        }
+
+        .today-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .today-meals, .today-tasks {
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 10px;
+        }
+
+        .today-meals h4, .today-tasks h4 {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 0.8rem;
+        }
+
+        .meal-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .meal-preview:last-child {
+            border-bottom: none;
+        }
+
+        .meal-check {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+        }
+
+        .day-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .day-btn {
+            padding: 0.6rem 1rem;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .day-btn:hover {
+            border-color: var(--primary-light);
+        }
+
+        .day-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .day-btn.completed {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .meal-card {
+            border-left: 4px solid var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .meal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .meal-type {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .meal-calories {
+            background: var(--accent);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .meal-name {
+            font-size: 1.1rem;
+            color: var(--primary-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .meal-ingredients {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .meal-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background: none;
+            border: 2px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .breakfast-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .breakfast-option {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            background: var(--card-bg);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .breakfast-option:hover {
+            border-color: var(--primary-light);
+        }
+
+        .breakfast-option.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .task-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .task-section h3 {
+            font-size: 1rem;
+            color: var(--text-light);
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            background: #eef2ee;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--primary);
+            margin-top: 2px;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+
+        .task-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .progress-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-ring {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 1rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            position: relative;
+        }
+
+        .calendar-day.today {
+            border: 2px solid var(--primary);
+        }
+
+        .calendar-day.completed {
+            background: var(--success);
+            color: white;
+        }
+
+        .calendar-day.partial {
+            background: var(--warning);
+        }
+
+        .calendar-day.future {
+            opacity: 0.5;
+        }
+
+        .calendar-day.fast {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .day-label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            margin-bottom: 0.3rem;
+        }
+
+        .week-label {
+            grid-column: span 7;
+            font-weight: 600;
+            padding: 0.5rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .chart-container {
+            height: 200px;
+            margin-top: 1rem;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 100%;
+            padding: 1rem 0;
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .bar {
+            width: 30px;
+            background: linear-gradient(to top, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+        }
+
+        .bar-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        .bar-value {
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .reminder-list {
+            list-style: none;
+        }
+
+        .reminder-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .reminder-icon {
+            font-size: 1.2rem;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .recipe-section {
+            margin-bottom: 1rem;
+        }
+
+        .recipe-section h4 {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .recipe-section ul, .recipe-section ol {
+            margin-left: 1.2rem;
+        }
+
+        .recipe-section li {
+            margin-bottom: 0.3rem;
+            line-height: 1.5;
+        }
+
+        .notes-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 600px) {
+            .today-info {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .day-selector {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 0.5rem;
+            }
+
+            .day-btn {
+                flex-shrink: 0;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .water-tracker {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .water-glass {
+            width: 40px;
+            height: 50px;
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .water-glass.filled {
+            border-color: #3498db;
+        }
+
+        .water-glass.filled::before {
+            content: '';
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #3498db, #74b9ff);
+            animation: fillUp 0.3s ease;
+        }
+
+        @keyframes fillUp {
+            from { height: 0; }
+            to { height: 100%; }
+        }
+
+        .settings-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .settings-section h4 {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .user-id-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg);
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .user-id-display input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .setup-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .setup-card .card-title {
+            color: white;
+        }
+
+        .setup-card input {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .setup-card .btn {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header" style="position: relative;">
+        <h1>Enlightenment Cleanse</h1>
+        <div class="phase-badge" id="phaseBadge">Week 1 - Plant-Based Diet</div>
+        <div class="sync-status">
+            <span class="sync-dot" id="syncDot"></span>
+            <span id="syncText">Synced</span>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="nav-btn" data-tab="meals">Meals</button>
+        <button class="nav-btn" data-tab="tasks">Tasks</button>
+        <button class="nav-btn" data-tab="progress">Progress</button>
+    </nav>
+
+    <main class="container">
+        <!-- Dashboard Tab -->
+        <section id="dashboard" class="tab-content">
+            <div class="card">
+                <div class="card-title">📊 Today's Overview</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="dayNumber">1</div>
+                        <div class="stat-label">Day of 21</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="caloriesConsumed">0</div>
+                        <div class="stat-label">Calories / 2500</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="mealsCompleted">0/3</div>
+                        <div class="stat-label">Meals Done</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasksCompleted">0</div>
+                        <div class="stat-label">Tasks Done</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">💧 Water Intake (8 glasses)</div>
+                <div class="water-tracker" id="waterTracker"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📅 Today - <span id="todayDate"></span></div>
+                <div class="today-info">
+                    <div class="today-meals">
+                        <h4>Today's Meals</h4>
+                        <div id="todayMealsList"></div>
+                    </div>
+                    <div class="today-tasks">
+                        <h4>Key Tasks</h4>
+                        <div id="todayTasksList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚠️ Daily Reminders</div>
+                <ul class="reminder-list">
+                    <li class="reminder-item"><span class="reminder-icon">🕗</span> No eating after 8 PM</li>
+                    <li class="reminder-item"><span class="reminder-icon">🥛</span> Only 1 serving fermented dairy (at dinner)</li>
+                    <li class="reminder-item"><span class="reminder-icon">☕</span> Max 1 cup green tea</li>
+                    <li class="reminder-item"><span class="reminder-icon">🏋️</span> Keep up with CrossFit!</li>
+                    <li class="reminder-item"><span class="reminder-icon">🫒</span> Approved oils: ghee, olive, coconut, avocado, sesame</li>
+                </ul>
+
+                <div class="settings-section">
+                    <h4>Sync ID (use same ID on all devices)</h4>
+                    <div class="user-id-display">
+                        <input type="text" id="userIdInput" readonly>
+                        <button class="btn btn-small btn-outline" onclick="copyUserId()">Copy</button>
+                        <button class="btn btn-small btn-outline" onclick="promptChangeId()">Change</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Meals Tab -->
+        <section id="meals" class="tab-content hidden">
+            <div class="card">
+                <div class="card-title">📆 Select Day</div>
+                <div class="day-selector" id="daySelector"></div>
+            </div>
+
+            <div id="mealCards"></div>
+
+            <div class="card">
+                <div class="card-title">📝 Notes for Today</div>
+                <textarea class="notes-textarea" id="mealNotes" placeholder="How are you feeling? Any adjustments needed?"></textarea>
+            </div>
+        </section>
+
+        <!-- Tasks Tab -->
+        <section id="tasks" class="tab-content hidden">
+            <div class="card">
+                <div class="card-title">✅ Daily Tasks</div>
+                <div class="task-section">
+                    <h3>Morning Routine</h3>
+                    <div id="morningTasks"></div>
+                </div>
+                <div class="task-section">
+                    <h3>Throughout the Day</h3>
+                    <div id="dailyTasks"></div>
+                </div>
+                <div class="task-section">
+                    <h3>Evening Routine</h3>
+                    <div id="eveningTasks"></div>
+                </div>
+            </div>
+
+            <div class="card" id="prepTasksCard">
+                <div class="card-title">🍳 Prep Day Tasks (Saturday)</div>
+                <div id="prepTasks"></div>
+            </div>
+
+            <div class="card" id="shoppingCard">
+                <div class="card-title">🛒 Shopping Tasks</div>
+                <div id="shoppingTasks"></div>
+            </div>
+        </section>
+
+        <!-- Progress Tab -->
+        <section id="progress" class="tab-content hidden">
+            <div class="card">
+                <div class="card-title">🎯 Overall Progress</div>
+                <div class="progress-header">
+                    <svg class="progress-ring" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#dfe6e9" stroke-width="8"/>
+                        <circle id="progressCircle" cx="50" cy="50" r="45" fill="none" stroke="#4a7c59" stroke-width="8"
+                            stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round"
+                            transform="rotate(-90 50 50)"/>
+                        <text x="50" y="50" text-anchor="middle" dy="0.3em" font-size="20" font-weight="bold" fill="#4a7c59" id="progressText">0%</text>
+                    </svg>
+                    <p><strong id="daysCompleted">0</strong> of 21 days completed</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📅 Cleanse Calendar</div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📈 Daily Calories (Last 7 Days)</div>
+                <div class="chart-container">
+                    <div class="bar-chart" id="calorieChart"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🏆 Achievements</div>
+                <div id="achievements"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Recipe Modal -->
+    <div class="modal-overlay" id="recipeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Recipe</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================
+        // FIREBASE CONFIG - Replace with your own!
+        // =====================================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db = null;
+        let userRef = null;
+        let isOnline = false;
+        let firebaseReady = false;
+
+        function initFirebase() {
+            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                console.log('Firebase not configured - using local storage only');
+                updateSyncStatus('offline');
+                return;
+            }
+
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                firebaseReady = true;
+                setupRealtimeSync();
+            } catch (e) {
+                console.log('Firebase init failed:', e);
+                updateSyncStatus('offline');
+            }
+        }
+
+        function setupRealtimeSync() {
+            const userId = getUserId();
+            userRef = db.ref('users/' + userId);
+
+            userRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.lastUpdated > state.lastUpdated) {
+                    state = { ...state, ...data };
+                    localStorage.setItem('cleanseTrackerState', JSON.stringify(state));
+                    renderCurrentTab();
+                }
+                updateSyncStatus('synced');
+            });
+
+            db.ref('.info/connected').on('value', (snap) => {
+                isOnline = snap.val() === true;
+                updateSyncStatus(isOnline ? 'synced' : 'offline');
+            });
+        }
+
+        function getUserId() {
+            let userId = localStorage.getItem('cleanseUserId');
+            if (!userId) {
+                userId = 'cleanse_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cleanseUserId', userId);
+            }
+            document.getElementById('userIdInput').value = userId;
+            return userId;
+        }
+
+        function copyUserId() {
+            const input = document.getElementById('userIdInput');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                alert('Sync ID copied! Use this same ID on other devices.');
+            });
+        }
+
+        function promptChangeId() {
+            const newId = prompt('Enter Sync ID from another device (or leave blank for new):');
+            if (newId !== null) {
+                const userId = newId.trim() || 'cleanse_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cleanseUserId', userId);
+                localStorage.removeItem('cleanseTrackerState');
+                location.reload();
+            }
+        }
+
+        function updateSyncStatus(status) {
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncText');
+            dot.className = 'sync-dot';
+            if (status === 'syncing') {
+                dot.classList.add('syncing');
+                text.textContent = 'Syncing...';
+            } else if (status === 'offline') {
+                dot.classList.add('offline');
+                text.textContent = 'Local Only';
+            } else {
+                text.textContent = 'Synced';
+            }
+        }
+
+        // =====================================================
+        // DATA
+        // =====================================================
+        const CLEANSE_START = new Date('2026-01-18');
+
+        const BREAKFAST_OPTIONS = [
+            { id: 'oatmeal', name: 'Fat-Dense Oatmeal Bowl', calories: 850 },
+            { id: 'overnight', name: 'Overnight Oats', calories: 850 },
+            { id: 'smoothie', name: 'Power Smoothie Bowl', calories: 850 }
+        ];
+
+        const MEALS_DATA = {
+            'Sun': { lunch: { name: 'Buddha Bowl', calories: 850 }, dinner: { name: 'Lentil Soup + Rice', calories: 800, dairy: true } },
+            'Mon': { lunch: { name: 'Burrito Bowl', calories: 850 }, dinner: { name: 'Tofu Veggie Stir-Fry', calories: 800, dairy: true } },
+            'Tue': { lunch: { name: 'Chickpea Curry Bowl', calories: 850 }, dinner: { name: 'Black Bean Buddha Bowl', calories: 800, dairy: true } },
+            'Wed': { lunch: { name: 'Lentil Soup + Quinoa', calories: 850 }, dinner: { name: 'Tempeh Stir-Fry', calories: 800, dairy: true } },
+            'Thu': { lunch: { name: 'Cauliflower Buddha Bowl', calories: 850 }, dinner: { name: 'Red Lentil Curry', calories: 800, dairy: true } },
+            'Fri': { lunch: { name: 'Burrito Bowl', calories: 850 }, dinner: { name: 'Tofu Scramble Bowl', calories: 800, dairy: true } },
+            'Sat': { lunch: { name: 'Chickpea Curry Bowl', calories: 850 }, dinner: { name: 'Big Buddha Bowl', calories: 800, dairy: true } }
+        };
+
+        const RECIPES = {
+            'Fat-Dense Oatmeal Bowl': {
+                prepTime: '5 min', cookTime: '5 min',
+                ingredients: ['1 cup rolled oats (300 cal)', '2 cups water', '3 Tbsp almond butter (300 cal)', '1 Tbsp ground flaxseed (50 cal)', '1 banana, sliced (100 cal)', '2 Tbsp chopped walnuts (100 cal)', '1/2 tsp cinnamon', '1 tsp maple syrup'],
+                instructions: ['Bring water to boil, add oats, simmer 5 min', 'Stir in almond butter and flaxseed while hot', 'Top with banana, walnuts, cinnamon, maple syrup']
+            },
+            'Overnight Oats': {
+                prepTime: '5 min (night before)', cookTime: 'None',
+                ingredients: ['1 cup rolled oats (300 cal)', '1 cup almond/oat milk (60 cal)', '3 Tbsp almond butter (300 cal)', '1 Tbsp chia seeds (60 cal)', '1 Tbsp ground flaxseed (50 cal)', '1 banana, sliced (100 cal)', '2 Tbsp walnuts (100 cal)', '1/2 tsp cinnamon', '1 tsp maple syrup'],
+                instructions: ['Night before: Mix oats, milk, chia, flaxseed, cinnamon, 2 Tbsp almond butter, maple syrup', 'Cover and refrigerate overnight', 'Morning: Top with remaining almond butter, banana, walnuts']
+            },
+            'Power Smoothie Bowl': {
+                prepTime: '5 min', cookTime: 'None',
+                ingredients: ['1 cup frozen berries (70 cal)', '1 frozen banana (100 cal)', '1 cup almond milk (60 cal)', '3 Tbsp almond butter (300 cal)', '2 Tbsp flaxseed (100 cal)', '1/4 cup oats (75 cal)', '2 Tbsp walnuts (100 cal)', '1 Tbsp chia seeds (60 cal)'],
+                instructions: ['Blend berries, banana, milk, 2 Tbsp almond butter, oats until thick', 'Pour into bowl', 'Top with remaining almond butter, flaxseed, walnuts, chia']
+            },
+            'Buddha Bowl': {
+                prepTime: '5 min',
+                ingredients: ['1.5 cups quinoa (330 cal)', '1 cup chickpeas (210 cal)', '1 cup roasted veggies (80 cal)', '1/2 avocado (120 cal)', '4 Tbsp tahini (200 cal)', 'Spinach, cilantro'],
+                instructions: ['Layer quinoa, chickpeas, roasted veggies', 'Add spinach, avocado', 'Drench with tahini, top with cilantro']
+            },
+            'Burrito Bowl': {
+                prepTime: '5 min',
+                ingredients: ['1.5 cups brown rice (330 cal)', '1 cup black beans (220 cal)', '1 cup peppers/onions (50 cal)', '1/2 avocado (120 cal)', '3 Tbsp tahini (150 cal)', 'Tomatoes, cilantro, lime'],
+                instructions: ['Heat rice and beans with cumin/chili', 'Top with peppers, avocado, tomatoes', 'Drizzle tahini, squeeze lime, add cilantro']
+            },
+            'Chickpea Curry Bowl': {
+                prepTime: '5 min',
+                ingredients: ['1.5 cups brown rice (330 cal)', '1.5 cups chickpea curry (350 cal)', '1 cup roasted veggies (50 cal)', '1 Tbsp ghee (120 cal)', 'Cilantro'],
+                instructions: ['Add rice, top with curry', 'Microwave 2-3 min', 'Add veggies, drizzle ghee, garnish']
+            },
+            'Lentil Soup + Quinoa': {
+                prepTime: '3 min',
+                ingredients: ['2 cups lentil soup (300 cal)', '1 cup quinoa (220 cal)', '2 Tbsp olive oil (240 cal)', 'Walnuts (100 cal)', 'Parsley'],
+                instructions: ['Heat soup', 'Serve with quinoa', 'Drizzle olive oil, add walnuts and parsley']
+            },
+            'Lentil Soup + Rice': {
+                prepTime: '3 min',
+                ingredients: ['2 cups lentil soup (300 cal)', '1 cup brown rice (215 cal)', '2 Tbsp olive oil (240 cal)', '1/2 cup yogurt (50 cal)', 'Parsley'],
+                instructions: ['Heat soup, serve with rice', 'Drizzle olive oil', 'Serve yogurt on side']
+            },
+            'Cauliflower Buddha Bowl': {
+                prepTime: '5 min',
+                ingredients: ['1.5 cups quinoa (330 cal)', '1 cup chickpeas (210 cal)', '1 cup roasted cauliflower (50 cal)', '1/2 avocado (120 cal)', '4 Tbsp tahini (200 cal)', 'Spinach, cilantro'],
+                instructions: ['Layer quinoa, chickpeas, cauliflower', 'Add spinach, avocado', 'Drench with tahini']
+            },
+            'Tofu Veggie Stir-Fry': {
+                prepTime: '5 min', cookTime: '15 min',
+                ingredients: ['1 block tofu (180 cal)', '1.5 cups quinoa (330 cal)', '2 cups vegetables (80 cal)', '3 Tbsp oil (360 cal)', '2 Tbsp tamari', 'Garlic, ginger', '1/2 cup yogurt (50 cal)'],
+                instructions: ['Fry tofu in oil until golden', 'Add garlic, ginger, vegetables', 'Add tamari, serve over quinoa with yogurt']
+            },
+            'Black Bean Buddha Bowl': {
+                prepTime: '5 min',
+                ingredients: ['1 cup quinoa (220 cal)', '1 cup black beans (220 cal)', '1 cup sweet potato (115 cal)', '4 Tbsp tahini (200 cal)', 'Spinach', '1/2 cup yogurt (50 cal)'],
+                instructions: ['Layer quinoa, beans, sweet potato', 'Add spinach, drench with tahini', 'Serve yogurt on side']
+            },
+            'Tempeh Stir-Fry': {
+                prepTime: '5 min', cookTime: '15 min',
+                ingredients: ['1 package tempeh (320 cal)', '1 cup brown rice (215 cal)', '2 cups vegetables (80 cal)', '2 Tbsp coconut oil (240 cal)', 'Tamari, maple syrup', '1/2 cup yogurt (50 cal)'],
+                instructions: ['Brown tempeh in oil', 'Add vegetables and sauce', 'Serve over rice with yogurt']
+            },
+            'Red Lentil Curry': {
+                prepTime: '5 min', cookTime: '20 min',
+                ingredients: ['1 cup red lentils (230 cal)', '1 cup quinoa (220 cal)', '1/2 can coconut milk (200 cal)', '1 Tbsp coconut oil (120 cal)', 'Curry powder, tomatoes, broth', '1/2 cup yogurt (50 cal)'],
+                instructions: ['Saute onion, add spices', 'Add lentils, tomatoes, broth', 'Simmer, add coconut milk', 'Serve over quinoa with yogurt']
+            },
+            'Tofu Scramble Bowl': {
+                prepTime: '5 min', cookTime: '10 min',
+                ingredients: ['1 block tofu, crumbled (180 cal)', '1.5 cups brown rice (330 cal)', '2 cups vegetables (80 cal)', '3 Tbsp oil (360 cal)', 'Turmeric, tamari', '1/2 cup yogurt (50 cal)'],
+                instructions: ['Scramble tofu with turmeric', 'Add vegetables and tamari', 'Serve over rice with yogurt']
+            },
+            'Big Buddha Bowl': {
+                prepTime: '5 min',
+                ingredients: ['1.5 cups quinoa (330 cal)', '1 cup chickpeas (210 cal)', '1 cup roasted veggies (80 cal)', '1/2 avocado (120 cal)', '6 Tbsp tahini (300 cal)', 'Walnuts (100 cal)', 'Spinach, cilantro', '1/2 cup yogurt (50 cal)'],
+                instructions: ['Layer quinoa, chickpeas, veggies', 'Add avocado, spinach', 'Extra tahini and walnuts', 'Yogurt on side']
+            }
+        };
+
+        const DAILY_TASKS = {
+            morning: [
+                { text: 'Drink water upon waking', time: 'On waking' },
+                { text: 'Prepare breakfast', time: '~8:00 AM' },
+                { text: 'Take supplements', time: 'With breakfast' }
+            ],
+            daily: [
+                { text: '8 glasses of water', time: 'Throughout day' },
+                { text: 'Max 1 cup green tea', time: 'Morning only' },
+                { text: 'Exercise / CrossFit', time: 'Your usual time' },
+                { text: 'Eat lunch', time: '~12:00 PM' },
+                { text: 'Mindfulness / meditation', time: 'Afternoon' }
+            ],
+            evening: [
+                { text: 'Dinner with dairy', time: '~6:00 PM' },
+                { text: 'Stop eating by 8 PM', time: 'Before 8:00 PM' },
+                { text: 'Stretching or yoga', time: 'Evening' },
+                { text: 'Journal', time: 'Before bed' }
+            ]
+        };
+
+        const PREP_TASKS = [
+            { text: 'Instant Pot: Chickpeas', category: 'Hour 1' },
+            { text: 'Instant Pot: Black Beans', category: 'Hour 1' },
+            { text: 'Instant Pot: Quinoa', category: 'Hour 2' },
+            { text: 'Stovetop: Brown Rice', category: 'Hour 2' },
+            { text: 'Air Fryer: Sweet Potatoes', category: 'Hour 2' },
+            { text: 'Air Fryer: Broccoli & Cauliflower', category: 'Hour 2' },
+            { text: 'Air Fryer: Peppers, Zucchini, Onions', category: 'Hour 2' },
+            { text: 'Make Tahini Dressing', category: 'Hour 3' },
+            { text: 'Make Lentil Soup', category: 'Hour 3' },
+            { text: 'Make Chickpea Curry', category: 'Hour 3' },
+            { text: 'Prep overnight oats', category: 'Hour 3' },
+            { text: 'Portion into containers', category: 'Hour 3' }
+        ];
+
+        const SHOPPING_TASKS = {
+            'Wed Jan 15': {
+                title: 'Pantry Items',
+                items: ['Quinoa, Brown Rice, Rolled Oats', 'Chickpeas, Black Beans, Lentils', 'Almond Butter, Tahini, Almonds, Walnuts', 'Olive Oil, Coconut Oil, Ghee', 'Broth, Tomatoes, Coconut Milk', 'Maple Syrup, Sea Salt', 'Frozen Berries, Chia Seeds', 'Spices, Tamari, Sesame Oil']
+            },
+            'Sat Jan 17': {
+                title: 'Fresh Items',
+                items: ['Spinach, Broccoli, Sweet Potatoes', 'Carrots, Bell Peppers, Onions, Garlic', 'Bananas, Avocados, Lemons', 'Greek Yogurt/Kefir, Almond Milk', 'Zucchini, Cauliflower, Cilantro', 'Tofu, Tempeh']
+            }
+        };
+
+        // =====================================================
+        // STATE
+        // =====================================================
+        let state = {
+            currentTab: 'dashboard',
+            selectedDay: 0,
+            meals: {},
+            tasks: {},
+            prepTasks: {},
+            shoppingTasks: {},
+            water: {},
+            notes: {},
+            breakfastChoices: {},
+            lastUpdated: 0
+        };
+
+        function loadState() {
+            const saved = localStorage.getItem('cleanseTrackerState');
+            if (saved) state = { ...state, ...JSON.parse(saved) };
+        }
+
+        function saveState() {
+            state.lastUpdated = Date.now();
+            localStorage.setItem('cleanseTrackerState', JSON.stringify(state));
+
+            if (firebaseReady && userRef) {
+                updateSyncStatus('syncing');
+                userRef.set(state).then(() => updateSyncStatus('synced')).catch(() => updateSyncStatus('offline'));
+            }
+        }
+
+        // =====================================================
+        // UTILITIES
+        // =====================================================
+        function getDayOfCleanse(date = new Date()) {
+            const start = new Date(CLEANSE_START);
+            start.setHours(0, 0, 0, 0);
+            const current = new Date(date);
+            current.setHours(0, 0, 0, 0);
+            return Math.floor((current - start) / (1000 * 60 * 60 * 24));
+        }
+
+        function getDateForDay(dayIndex) {
+            const date = new Date(CLEANSE_START);
+            date.setDate(date.getDate() + dayIndex);
+            return date;
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function getDayName(date) {
+            return date.toLocaleDateString('en-US', { weekday: 'short' });
+        }
+
+        function getCurrentPhase(date = new Date()) {
+            const day = getDayOfCleanse(date);
+            if (day < 0) return 'Pre-Cleanse';
+            if (day < 7) return 'Week 1 - Plant-Based Diet';
+            if (day < 12) return 'Week 2 - Continue Diet';
+            if (day < 17) return 'Central Fast';
+            return 'Final Phase';
+        }
+
+        function isFastingDay(dayIndex) {
+            return dayIndex >= 12 && dayIndex < 17;
+        }
+
+        function getBreakfastForDay(dayIndex) {
+            return BREAKFAST_OPTIONS.find(b => b.id === (state.breakfastChoices[dayIndex] || 'oatmeal'));
+        }
+
+        function renderCurrentTab() {
+            switch (state.currentTab) {
+                case 'dashboard': renderDashboard(); break;
+                case 'meals': renderMeals(); break;
+                case 'tasks': renderTasks(); break;
+                case 'progress': renderProgress(); break;
+            }
+        }
+
+        // =====================================================
+        // RENDER FUNCTIONS
+        // =====================================================
+        function renderDashboard() {
+            const today = new Date();
+            const dayIndex = getDayOfCleanse(today);
+            const dayNum = Math.max(1, Math.min(21, dayIndex + 1));
+
+            document.getElementById('todayDate').textContent = formatDate(today);
+            document.getElementById('dayNumber').textContent = dayNum;
+            document.getElementById('phaseBadge').textContent = getCurrentPhase(today);
+
+            const todayMeals = state.meals[dayIndex] || {};
+            const mealsCount = [todayMeals.breakfast, todayMeals.lunch, todayMeals.dinner].filter(Boolean).length;
+            document.getElementById('mealsCompleted').textContent = `${mealsCount}/3`;
+
+            let calories = 0;
+            const dayName = getDayName(today);
+            const mealData = MEALS_DATA[dayName];
+            const breakfast = getBreakfastForDay(dayIndex);
+
+            if (!isFastingDay(dayIndex)) {
+                if (todayMeals.breakfast) calories += breakfast.calories;
+                if (mealData) {
+                    if (todayMeals.lunch) calories += mealData.lunch.calories;
+                    if (todayMeals.dinner) calories += mealData.dinner.calories;
+                }
+            }
+            document.getElementById('caloriesConsumed').textContent = calories;
+
+            const todayTasks = state.tasks[dayIndex] || {};
+            document.getElementById('tasksCompleted').textContent = Object.values(todayTasks).filter(Boolean).length;
+
+            renderWaterTracker(dayIndex);
+            renderTodayMeals(dayIndex, dayName);
+            renderTodayTasks(dayIndex);
+        }
+
+        function renderWaterTracker(dayIndex) {
+            const container = document.getElementById('waterTracker');
+            const glasses = state.water[dayIndex] || 0;
+            container.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const glass = document.createElement('div');
+                glass.className = `water-glass ${i < glasses ? 'filled' : ''}`;
+                glass.onclick = () => {
+                    state.water[dayIndex] = i < glasses ? i : i + 1;
+                    saveState();
+                    renderWaterTracker(dayIndex);
+                };
+                container.appendChild(glass);
+            }
+        }
+
+        function renderTodayMeals(dayIndex, dayName) {
+            const container = document.getElementById('todayMealsList');
+            const meals = state.meals[dayIndex] || {};
+            const mealData = MEALS_DATA[dayName];
+            const breakfast = getBreakfastForDay(dayIndex);
+
+            if (isFastingDay(dayIndex)) {
+                container.innerHTML = '<p style="color: var(--text-light);">Fasting day</p>';
+                return;
+            }
+
+            let html = `<div class="meal-preview">
+                <input type="checkbox" class="meal-check" ${meals.breakfast ? 'checked' : ''} onchange="toggleMealDashboard(${dayIndex}, 'breakfast')">
+                <span>Breakfast: ${breakfast.name}</span>
+            </div>`;
+
+            if (mealData) {
+                html += `<div class="meal-preview">
+                    <input type="checkbox" class="meal-check" ${meals.lunch ? 'checked' : ''} onchange="toggleMealDashboard(${dayIndex}, 'lunch')">
+                    <span>Lunch: ${mealData.lunch.name}</span>
+                </div>
+                <div class="meal-preview">
+                    <input type="checkbox" class="meal-check" ${meals.dinner ? 'checked' : ''} onchange="toggleMealDashboard(${dayIndex}, 'dinner')">
+                    <span>Dinner: ${mealData.dinner.name}</span>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderTodayTasks(dayIndex) {
+            const container = document.getElementById('todayTasksList');
+            const tasks = state.tasks[dayIndex] || {};
+            const allTasks = [...DAILY_TASKS.morning, ...DAILY_TASKS.daily.slice(0, 2)];
+
+            container.innerHTML = allTasks.slice(0, 4).map((task, i) => `
+                <div class="meal-preview">
+                    <input type="checkbox" class="meal-check" ${tasks[`task_${i}`] ? 'checked' : ''} onchange="toggleTaskDashboard(${dayIndex}, 'task_${i}')">
+                    <span>${task.text}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderMeals() {
+            const selector = document.getElementById('daySelector');
+            selector.innerHTML = '';
+
+            for (let i = 0; i < 21; i++) {
+                const dayMeals = state.meals[i] || {};
+                const allDone = dayMeals.breakfast && dayMeals.lunch && dayMeals.dinner;
+                const btn = document.createElement('button');
+                btn.className = `day-btn ${state.selectedDay === i ? 'active' : ''} ${allDone ? 'completed' : ''}`;
+                btn.textContent = `Day ${i + 1}`;
+                btn.onclick = () => { state.selectedDay = i; renderMeals(); };
+                selector.appendChild(btn);
+            }
+
+            const container = document.getElementById('mealCards');
+            const date = getDateForDay(state.selectedDay);
+            const dayName = getDayName(date);
+            const mealData = MEALS_DATA[dayName];
+            const meals = state.meals[state.selectedDay] || {};
+            const currentBreakfast = getBreakfastForDay(state.selectedDay);
+
+            if (isFastingDay(state.selectedDay)) {
+                container.innerHTML = `<div class="card"><div class="card-title">🧘 Fasting Day</div><p>Stay hydrated with water, herbal tea, and broth.</p></div>`;
+                return;
+            }
+
+            let html = `<div class="card meal-card">
+                <div class="meal-header">
+                    <span class="meal-type">Breakfast</span>
+                    <span class="meal-calories">~${currentBreakfast.calories} cal</span>
+                </div>
+                <div class="breakfast-options">
+                    ${BREAKFAST_OPTIONS.map(opt => `
+                        <button class="breakfast-option ${(state.breakfastChoices[state.selectedDay] || 'oatmeal') === opt.id ? 'selected' : ''}" onclick="selectBreakfast(${state.selectedDay}, '${opt.id}')">${opt.name}</button>
+                    `).join('')}
+                </div>
+                <div class="meal-name">${currentBreakfast.name}</div>
+                <div class="meal-ingredients">${RECIPES[currentBreakfast.name]?.ingredients.slice(0, 4).join(' • ') || ''}...</div>
+                <div class="meal-actions">
+                    <button class="btn ${meals.breakfast ? 'btn-success' : 'btn-primary'}" onclick="toggleMeal(${state.selectedDay}, 'breakfast')">${meals.breakfast ? '✓ Done' : 'Complete'}</button>
+                    <button class="btn btn-outline" onclick="showRecipe('${currentBreakfast.name}')">Recipe</button>
+                </div>
+            </div>`;
+
+            if (mealData) {
+                ['lunch', 'dinner'].forEach(type => {
+                    const meal = mealData[type];
+                    html += `<div class="card meal-card">
+                        <div class="meal-header">
+                            <span class="meal-type">${type.charAt(0).toUpperCase() + type.slice(1)}${meal.dairy ? ' 🥛' : ''}</span>
+                            <span class="meal-calories">~${meal.calories} cal</span>
+                        </div>
+                        <div class="meal-name">${meal.name}</div>
+                        <div class="meal-ingredients">${RECIPES[meal.name]?.ingredients.slice(0, 4).join(' • ') || ''}...</div>
+                        <div class="meal-actions">
+                            <button class="btn ${meals[type] ? 'btn-success' : 'btn-primary'}" onclick="toggleMeal(${state.selectedDay}, '${type}')">${meals[type] ? '✓ Done' : 'Complete'}</button>
+                            <button class="btn btn-outline" onclick="showRecipe('${meal.name}')">Recipe</button>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            container.innerHTML = html;
+            document.getElementById('mealNotes').value = state.notes[state.selectedDay] || '';
+        }
+
+        function renderTasks() {
+            const dayIndex = getDayOfCleanse();
+            const tasks = state.tasks[dayIndex] || {};
+            let taskIndex = 0;
+
+            document.getElementById('morningTasks').innerHTML = DAILY_TASKS.morning.map(task => createTaskHTML(task, `task_${taskIndex++}`, tasks, dayIndex)).join('');
+            document.getElementById('dailyTasks').innerHTML = DAILY_TASKS.daily.map(task => createTaskHTML(task, `task_${taskIndex++}`, tasks, dayIndex)).join('');
+            document.getElementById('eveningTasks').innerHTML = DAILY_TASKS.evening.map(task => createTaskHTML(task, `task_${taskIndex++}`, tasks, dayIndex)).join('');
+
+            const isSaturday = new Date().getDay() === 6;
+            const prepCard = document.getElementById('prepTasksCard');
+            if (isSaturday || Object.keys(state.prepTasks).length > 0) {
+                prepCard.classList.remove('hidden');
+                document.getElementById('prepTasks').innerHTML = PREP_TASKS.map((task, i) => `
+                    <div class="task-item ${state.prepTasks[`prep_${i}`] ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${state.prepTasks[`prep_${i}`] ? 'checked' : ''} onchange="togglePrepTask('prep_${i}')">
+                        <span class="task-text">${task.text}</span>
+                        <span class="task-time">${task.category}</span>
+                    </div>
+                `).join('');
+            } else {
+                prepCard.classList.add('hidden');
+            }
+
+            let shopHtml = '';
+            for (const [dateStr, data] of Object.entries(SHOPPING_TASKS)) {
+                shopHtml += `<div class="task-section"><h3>${dateStr} - ${data.title}</h3>` +
+                    data.items.map((item, i) => `
+                        <div class="task-item ${state.shoppingTasks[`shop_${dateStr}_${i}`] ? 'completed' : ''}">
+                            <input type="checkbox" class="task-checkbox" ${state.shoppingTasks[`shop_${dateStr}_${i}`] ? 'checked' : ''} onchange="toggleShoppingTask('shop_${dateStr}_${i}')">
+                            <span class="task-text">${item}</span>
+                        </div>
+                    `).join('') + '</div>';
+            }
+            document.getElementById('shoppingTasks').innerHTML = shopHtml;
+        }
+
+        function createTaskHTML(task, id, tasks, dayIndex) {
+            return `<div class="task-item ${tasks[id] ? 'completed' : ''}">
+                <input type="checkbox" class="task-checkbox" ${tasks[id] ? 'checked' : ''} onchange="toggleTask(${dayIndex}, '${id}')">
+                <span class="task-text">${task.text}</span>
+                <span class="task-time">${task.time}</span>
+            </div>`;
+        }
+
+        function renderProgress() {
+            const completedDays = countCompletedDays();
+            const progress = Math.round((completedDays / 21) * 100);
+
+            const circle = document.getElementById('progressCircle');
+            circle.style.strokeDashoffset = 283 - (progress / 100) * 283;
+            document.getElementById('progressText').textContent = `${progress}%`;
+            document.getElementById('daysCompleted').textContent = completedDays;
+
+            renderCalendar();
+            renderCalorieChart();
+            renderAchievements();
+        }
+
+        function countCompletedDays() {
+            let count = 0;
+            for (let i = 0; i < 21; i++) {
+                const meals = state.meals[i] || {};
+                if (meals.breakfast && meals.lunch && meals.dinner) count++;
+                else if (isFastingDay(i)) count++;
+            }
+            return count;
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendarGrid');
+            const today = getDayOfCleanse();
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            let html = dayLabels.map(d => `<div class="day-label" style="text-align:center;font-weight:500;">${d}</div>`).join('');
+
+            const weeks = [
+                { label: 'Week 1 (Jan 18-24)', days: [0, 1, 2, 3, 4, 5, 6] },
+                { label: 'Week 2 (Jan 25-29)', days: [7, 8, 9, 10, 11, -1, -1] },
+                { label: 'Fast (Jan 30 - Feb 3)', days: [12, 13, 14, 15, 16, -1, -1] },
+                { label: 'Final (Feb 4-8)', days: [17, 18, 19, 20, -1, -1, -1] }
+            ];
+
+            weeks.forEach(week => {
+                html += `<div class="week-label">${week.label}</div>`;
+                week.days.forEach(dayIdx => {
+                    if (dayIdx === -1) {
+                        html += `<div class="calendar-day" style="opacity:0;"></div>`;
+                    } else {
+                        const date = getDateForDay(dayIdx);
+                        const meals = state.meals[dayIdx] || {};
+                        const mealsComplete = [meals.breakfast, meals.lunch, meals.dinner].filter(Boolean).length;
+                        let classes = 'calendar-day';
+                        if (dayIdx === today) classes += ' today';
+                        if (dayIdx > today) classes += ' future';
+                        if (isFastingDay(dayIdx)) classes += ' fast';
+                        else if (mealsComplete === 3) classes += ' completed';
+                        else if (mealsComplete > 0) classes += ' partial';
+
+                        html += `<div class="${classes}" title="${formatDate(date)}"><span>${date.getDate()}</span></div>`;
+                    }
+                });
+            });
+            container.innerHTML = html;
+        }
+
+        function renderCalorieChart() {
+            const container = document.getElementById('calorieChart');
+            const today = getDayOfCleanse();
+            const days = [];
+
+            for (let i = Math.max(0, today - 6); i <= today; i++) {
+                const date = getDateForDay(i);
+                const dayName = getDayName(date);
+                const meals = state.meals[i] || {};
+                const mealData = MEALS_DATA[dayName];
+                const breakfast = getBreakfastForDay(i);
+
+                let calories = 0;
+                if (!isFastingDay(i)) {
+                    if (meals.breakfast) calories += breakfast.calories;
+                    if (mealData) {
+                        if (meals.lunch) calories += mealData.lunch.calories;
+                        if (meals.dinner) calories += mealData.dinner.calories;
+                    }
+                }
+                days.push({ label: date.toLocaleDateString('en-US', { weekday: 'short' }), value: calories });
+            }
+
+            container.innerHTML = days.map(d => `
+                <div class="bar-wrapper">
+                    <div class="bar-value">${d.value}</div>
+                    <div class="bar" style="height: ${(d.value / 2500) * 150}px;"></div>
+                    <div class="bar-label">${d.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderAchievements() {
+            const completedDays = countCompletedDays();
+            const today = getDayOfCleanse();
+            const achievements = [
+                { icon: '🌱', name: 'Day 1 Complete', earned: completedDays >= 1 },
+                { icon: '🌿', name: 'First Week Done', earned: completedDays >= 7 },
+                { icon: '💪', name: 'Halfway There', earned: completedDays >= 11 },
+                { icon: '🧘', name: 'Fast Completed', earned: today >= 17 },
+                { icon: '🏆', name: 'Cleanse Master', earned: completedDays >= 21 }
+            ];
+
+            document.getElementById('achievements').innerHTML = achievements.map(a => `
+                <div class="reminder-item" style="opacity: ${a.earned ? 1 : 0.4}">
+                    <span class="reminder-icon">${a.icon}</span>
+                    <span>${a.name}</span>
+                    ${a.earned ? '<span style="margin-left:auto;color:var(--success);">✓</span>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // =====================================================
+        // EVENT HANDLERS
+        // =====================================================
+        function selectBreakfast(dayIndex, id) {
+            state.breakfastChoices[dayIndex] = id;
+            saveState();
+            renderMeals();
+        }
+
+        function toggleMeal(dayIndex, type) {
+            if (!state.meals[dayIndex]) state.meals[dayIndex] = {};
+            state.meals[dayIndex][type] = !state.meals[dayIndex][type];
+            saveState();
+            renderMeals();
+            renderDashboard();
+        }
+
+        function toggleMealDashboard(dayIndex, type) {
+            if (!state.meals[dayIndex]) state.meals[dayIndex] = {};
+            state.meals[dayIndex][type] = !state.meals[dayIndex][type];
+            saveState();
+            renderDashboard();
+        }
+
+        function toggleTask(dayIndex, taskId) {
+            if (!state.tasks[dayIndex]) state.tasks[dayIndex] = {};
+            state.tasks[dayIndex][taskId] = !state.tasks[dayIndex][taskId];
+            saveState();
+            renderTasks();
+            renderDashboard();
+        }
+
+        function toggleTaskDashboard(dayIndex, taskId) {
+            if (!state.tasks[dayIndex]) state.tasks[dayIndex] = {};
+            state.tasks[dayIndex][taskId] = !state.tasks[dayIndex][taskId];
+            saveState();
+            renderDashboard();
+        }
+
+        function togglePrepTask(id) {
+            state.prepTasks[id] = !state.prepTasks[id];
+            saveState();
+            renderTasks();
+        }
+
+        function toggleShoppingTask(id) {
+            state.shoppingTasks[id] = !state.shoppingTasks[id];
+            saveState();
+            renderTasks();
+        }
+
+        function showRecipe(name) {
+            const recipe = RECIPES[name];
+            if (!recipe) return;
+
+            document.getElementById('modalTitle').textContent = name;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="recipe-section"><h4>Time</h4><p>Prep: ${recipe.prepTime}${recipe.cookTime ? ` | Cook: ${recipe.cookTime}` : ''}</p></div>
+                <div class="recipe-section"><h4>Ingredients</h4><ul>${recipe.ingredients.map(i => `<li>${i}</li>`).join('')}</ul></div>
+                <div class="recipe-section"><h4>Instructions</h4><ol>${recipe.instructions.map(i => `<li>${i}</li>`).join('')}</ol></div>
+            `;
+            document.getElementById('recipeModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('recipeModal').classList.remove('active');
+        }
+
+        document.getElementById('mealNotes').addEventListener('input', (e) => {
+            state.notes[state.selectedDay] = e.target.value;
+            saveState();
+        });
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+                document.getElementById(btn.dataset.tab).classList.remove('hidden');
+                state.currentTab = btn.dataset.tab;
+                renderCurrentTab();
+            });
+        });
+
+        document.getElementById('recipeModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('recipeModal')) closeModal();
+        });
+
+        // =====================================================
+        // INIT
+        // =====================================================
+        function init() {
+            loadState();
+            getUserId();
+            const today = getDayOfCleanse();
+            if (today >= 0 && today < 21) state.selectedDay = today;
+            renderDashboard();
+            initFirebase();
+        }
+
+        init();
+    </script>
+</body>
+</html>
