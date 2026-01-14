@@ -1636,14 +1636,15 @@
 
         function renderMiniCalendar(selectedDayIndex, todayIndex) {
             const container = document.getElementById('miniCalendar');
-            const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
             let html = dayLabels.map(d => `<div class="mini-cal-header">${d}</div>`).join('');
 
-            // Show days from Jan 13 (day -4) to Feb 6 (day 20) - 21 day cleanse
-            // First, add empty cells to align with the correct day of week
+            // Show days from Jan 13 (day -4) to Feb 16 (day 30)
+            // First, add empty cells to align with the correct day of week (Monday = 0)
             const firstDate = getDateForDay(-4); // Jan 13
-            const firstDayOfWeek = firstDate.getDay(); // 0 = Sunday, Jan 13 is Monday (1)
+            const jsDayOfWeek = firstDate.getDay(); // 0 = Sunday in JS
+            const firstDayOfWeek = jsDayOfWeek === 0 ? 6 : jsDayOfWeek - 1; // Convert to Monday=0, Sunday=6
 
             for (let i = 0; i < firstDayOfWeek; i++) {
                 html += '<div class="mini-cal-day" style="opacity: 0;"></div>';
@@ -1953,18 +1954,18 @@
         function renderCalendar() {
             const container = document.getElementById('calendarGrid');
             const today = getDayOfCleanse();
-            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             let html = dayLabels.map(d => `<div class="day-label" style="text-align:center;font-weight:500;">${d}</div>`).join('');
 
+            // Calendar layout: Monday to Sunday
             const weeks = [
-                { label: 'Pre-Cleanse (Jan 13-17)', days: [-5, -4, -3, -2, -1, -1, -1], isPreCleanse: true },
-                { label: 'Week 1 (Jan 18-24)', days: [0, 1, 2, 3, 4, 5, 6] },
-                { label: 'Week 2 (Jan 25-29)', days: [7, 8, 9, 10, 11, -99, -99] },
-                { label: '3-Day Fast (Jan 30 - Feb 1)', days: [12, 13, 14, -99, -99, -99, -99] },
-                { label: 'Post-Fast (Feb 2-4)', days: [15, 16, 17, -99, -99, -99, -99] },
-                { label: 'Travel (Feb 5-8)', days: [18, 19, 20, 21, -99, -99, -99] },
-                { label: 'Week 4 (Feb 9-12)', days: [-99, 22, 23, 24, 25, -99, -99] },
-                { label: 'Final Days (Feb 13-16)', days: [26, 27, 28, 29, -99, -99, -99] }
+                { label: 'Pre-Cleanse (Jan 13-17)', days: [-4, -3, -2, -1, 0, -99, -99], isPreCleanse: true },
+                { label: 'Week 1 (Jan 18-24)', days: [-99, -99, -99, -99, -99, -99, 1] },
+                { label: 'Week 1 cont. (Jan 19-25)', days: [2, 3, 4, 5, 6, 7, 8] },
+                { label: 'Week 2 (Jan 26-Feb 1)', days: [9, 10, 11, 12, 13, 14, 15] },
+                { label: 'Post-Fast & Travel (Feb 2-8)', days: [16, 17, 18, 19, 20, 21, 22] },
+                { label: 'Week 4 (Feb 9-15)', days: [23, 24, 25, 26, 27, 28, 29] },
+                { label: 'Final Day (Feb 16)', days: [30, -99, -99, -99, -99, -99, -99] }
             ];
 
             weeks.forEach(week => {
