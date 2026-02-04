@@ -787,6 +787,180 @@
             margin: 0 auto;
         }
 
+        /* Drop zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--surface);
+            margin-bottom: 12px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(108, 140, 255, 0.05);
+        }
+
+        .drop-zone-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+
+        .drop-zone h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .drop-zone p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .parse-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .parse-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .parse-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .parse-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .parse-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .parsing-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .parse-preview {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 120px;
+            overflow: hidden;
+        }
+
+        .parse-preview img {
+            max-width: 100%;
+            max-height: 100px;
+            border-radius: 4px;
+        }
+
+        .parse-error {
+            color: var(--red);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .divider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .divider-row::before,
+        .divider-row::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .api-key-input {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .api-key-input input {
+            flex: 1;
+            padding: 9px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .api-key-input input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .api-key-status {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .api-key-status.set {
+            color: var(--green);
+        }
+
+        .api-key-status.unset {
+            color: var(--text-muted);
+        }
+
         @media (max-width: 480px) {
             .app {
                 padding: 0 12px 100px;
@@ -855,6 +1029,7 @@
             settings: {
                 stores: { ...DEFAULT_STORES },
                 reminderDays: [1, 3, 7],
+                apiKey: '',
             },
             currentTab: 'items',
             currentFilter: 'active',
@@ -872,6 +1047,7 @@
                     if (parsed.settings) {
                         state.settings.stores = parsed.settings.stores || { ...DEFAULT_STORES };
                         state.settings.reminderDays = parsed.settings.reminderDays || [1, 3, 7];
+                        state.settings.apiKey = parsed.settings.apiKey || '';
                     }
                 }
             } catch (e) {
@@ -1097,8 +1273,35 @@
         function renderAddForm() {
             const container = document.getElementById('tab-add');
             const storeNames = Object.keys(state.settings.stores).sort();
+            const hasKey = !!state.settings.apiKey;
 
             container.innerHTML = `
+                ${hasKey ? `
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+                    <div class="drop-zone-icon">\u{1F4F7}</div>
+                    <h3>Drop a screenshot here</h3>
+                    <p>Receipt, order confirmation, or email screenshot &mdash; or click to browse</p>
+                </div>
+                <div class="parse-section">
+                    <h3>Paste Order Email</h3>
+                    <div class="form-group" style="margin-bottom:0">
+                        <textarea id="emailPaste" placeholder="Paste the text from an order confirmation email..." style="min-height:80px"></textarea>
+                    </div>
+                    <button class="parse-btn" onclick="parseEmailText()">Parse Email Text</button>
+                </div>
+                <div id="parseStatus"></div>
+                <div class="divider-row">or enter manually</div>
+                ` : `
+                <div class="parse-section" style="border-color: var(--border); opacity: 0.8;">
+                    <h3>Smart Import</h3>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+                        Drop screenshots or paste order emails to auto-fill.
+                        Add your Anthropic API key in Settings to enable this.
+                    </p>
+                    <button class="parse-btn" onclick="switchTab('settings')" style="background:var(--border);color:var(--text-muted);">Go to Settings</button>
+                </div>
+                `}
                 <div class="form-section">
                     <h3>New Purchase</h3>
                     <div class="form-group">
@@ -1165,6 +1368,21 @@
                         <input type="number" id="newStoreDays" placeholder="Days" style="max-width:80px" min="1">
                         <button class="small-btn primary" onclick="addStore()">Add</button>
                     </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Smart Import (API Key)</h3>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+                        Enter your Anthropic API key to enable screenshot and email parsing.
+                        Your key is stored locally in your browser only.
+                    </p>
+                    <div class="api-key-input">
+                        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." value="${escapeHtml(state.settings.apiKey)}">
+                        <button class="small-btn primary" onclick="saveApiKey()">Save</button>
+                    </div>
+                    <div class="api-key-status ${state.settings.apiKey ? 'set' : 'unset'}">
+                        ${state.settings.apiKey ? 'Key saved (' + state.settings.apiKey.slice(0, 10) + '...)' : 'No key set — smart import disabled'}
+                    </div>
+                    ${state.settings.apiKey ? '<button class="small-btn danger" style="margin-top:8px" onclick="clearApiKey()">Remove Key</button>' : ''}
                 </div>
                 <div class="settings-section danger-zone">
                     <h3>Data</h3>
@@ -1414,6 +1632,249 @@
             );
         }
 
+        // ── API key management ──
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            const key = input.value.trim();
+            if (!key) { showToast('Please enter an API key'); return; }
+            state.settings.apiKey = key;
+            saveState();
+            renderSettings();
+            showToast('API key saved');
+        }
+
+        function clearApiKey() {
+            state.settings.apiKey = '';
+            saveState();
+            renderSettings();
+            showToast('API key removed');
+        }
+
+        // ── Smart import: Screenshot parsing ──
+        let pendingImageData = null;
+
+        function setupDropZone() {
+            const zone = document.getElementById('dropZone');
+            if (!zone) return;
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    processImageFile(file);
+                } else {
+                    showToast('Please drop an image file');
+                }
+            });
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) processImageFile(file);
+        }
+
+        function processImageFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Full = e.target.result;
+                const base64Data = base64Full.split(',')[1];
+                const mediaType = file.type;
+
+                // Show preview
+                const statusEl = document.getElementById('parseStatus');
+                statusEl.innerHTML = `
+                    <div class="parse-preview"><img src="${base64Full}" alt="Screenshot"></div>
+                    <div class="parsing-status"><div class="spinner"></div> Analyzing screenshot...</div>
+                `;
+
+                parseWithClaude([{
+                    type: 'image',
+                    source: { type: 'base64', media_type: mediaType, data: base64Data }
+                }, {
+                    type: 'text',
+                    text: PARSE_PROMPT
+                }]);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ── Smart import: Email text parsing ──
+        function parseEmailText() {
+            const textarea = document.getElementById('emailPaste');
+            const text = textarea.value.trim();
+            if (!text) { showToast('Paste email text first'); return; }
+
+            const statusEl = document.getElementById('parseStatus');
+            statusEl.innerHTML = `
+                <div class="parsing-status"><div class="spinner"></div> Parsing email text...</div>
+            `;
+
+            parseWithClaude([{
+                type: 'text',
+                text: PARSE_PROMPT + '\n\nHere is the email / order text:\n\n' + text
+            }]);
+        }
+
+        const PARSE_PROMPT = `Extract purchase/order information from this receipt, order confirmation, or email.
+
+Return ONLY a JSON object (no markdown, no explanation) with these fields:
+{
+  "items": [
+    {
+      "name": "item description",
+      "store": "store or retailer name",
+      "purchaseDate": "YYYY-MM-DD",
+      "price": 0.00,
+      "orderNumber": "order or confirmation number if visible"
+    }
+  ]
+}
+
+Rules:
+- If multiple items, include all of them in the array
+- For purchaseDate use YYYY-MM-DD format. If only a partial date or no year, assume the current year (2026)
+- For price, use the per-item price as a number (no $ sign)
+- If a field is not found, use null
+- For store, use the common name (e.g. "Amazon" not "Amazon.com Services LLC")
+- Return ONLY valid JSON, nothing else`;
+
+        async function parseWithClaude(content) {
+            const statusEl = document.getElementById('parseStatus');
+
+            if (!state.settings.apiKey) {
+                statusEl.innerHTML = '<div class="parse-error">No API key set. Go to Settings to add one.</div>';
+                return;
+            }
+
+            try {
+                const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': state.settings.apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true',
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1024,
+                        messages: [{ role: 'user', content }],
+                    }),
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error?.message || `API error ${resp.status}`);
+                }
+
+                const data = await resp.json();
+                const text = data.content[0].text.trim();
+
+                // Try to extract JSON from the response
+                let parsed;
+                try {
+                    // Handle cases where the model wraps in ```json
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+                } catch (e) {
+                    throw new Error('Could not parse response as JSON');
+                }
+
+                if (!parsed.items || !parsed.items.length) {
+                    statusEl.innerHTML = '<div class="parse-error">No purchase information found. Try a clearer screenshot or paste the email text.</div>';
+                    return;
+                }
+
+                if (parsed.items.length === 1) {
+                    // Single item: auto-fill the form
+                    autoFillForm(parsed.items[0]);
+                    statusEl.innerHTML = '<div class="parsing-status" style="border-color:var(--green-border);color:var(--green);">Parsed successfully — review and submit below</div>';
+                } else {
+                    // Multiple items: let user pick or add all
+                    statusEl.innerHTML = `
+                        <div class="parsing-status" style="border-color:var(--green-border);color:var(--green);">
+                            Found ${parsed.items.length} items
+                        </div>
+                        <div class="form-section" style="margin-top:8px;">
+                            ${parsed.items.map((item, i) => `
+                                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
+                                    <div>
+                                        <div style="font-size:13px;font-weight:500;">${escapeHtml(item.name || 'Unknown item')}</div>
+                                        <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(item.store || '')} ${item.price ? '· $' + Number(item.price).toFixed(2) : ''}</div>
+                                    </div>
+                                    <button class="small-btn primary" onclick='autoFillForm(${JSON.stringify(item)})'>Use</button>
+                                </div>
+                            `).join('')}
+                            <button class="parse-btn" style="margin-top:12px;" onclick='addAllParsedItems(${JSON.stringify(parsed.items)})'>Add All Items</button>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                statusEl.innerHTML = `<div class="parse-error">Error: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function autoFillForm(item) {
+            const nameEl = document.getElementById('addName');
+            const storeEl = document.getElementById('addStore');
+            const dateEl = document.getElementById('addDate');
+            const windowEl = document.getElementById('addWindow');
+            const priceEl = document.getElementById('addPrice');
+            const notesEl = document.getElementById('addNotes');
+
+            if (nameEl && item.name) nameEl.value = item.name;
+            if (storeEl && item.store) {
+                storeEl.value = item.store;
+                // Try to auto-fill return window from store preset
+                if (windowEl) {
+                    const storeKey = Object.keys(state.settings.stores).find(
+                        k => k.toLowerCase() === item.store.toLowerCase()
+                    );
+                    if (storeKey) windowEl.value = state.settings.stores[storeKey];
+                }
+            }
+            if (dateEl && item.purchaseDate) dateEl.value = item.purchaseDate;
+            if (priceEl && item.price) priceEl.value = item.price;
+            if (notesEl && item.orderNumber) notesEl.value = 'Order #' + item.orderNumber;
+
+            // Scroll form into view
+            if (nameEl) nameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function addAllParsedItems(items) {
+            let added = 0;
+            for (const item of items) {
+                const store = item.store || 'Unknown';
+                const storeKey = Object.keys(state.settings.stores).find(
+                    k => k.toLowerCase() === store.toLowerCase()
+                );
+                const returnWindow = storeKey ? state.settings.stores[storeKey] : 30;
+
+                state.items.push({
+                    id: generateId(),
+                    name: item.name || 'Unknown item',
+                    store,
+                    purchaseDate: item.purchaseDate || todayStr(),
+                    returnWindow,
+                    price: item.price || 0,
+                    notes: item.orderNumber ? 'Order #' + item.orderNumber : '',
+                    status: 'active',
+                    createdAt: Date.now(),
+                });
+                added++;
+            }
+            saveState();
+            showToast(added + ' item' + (added > 1 ? 's' : '') + ' added');
+            switchTab('items');
+        }
+
         // ── Auto-fill return window when store is typed ──
         function setupStoreAutoFill() {
             const storeInput = document.getElementById('addStore');
@@ -1434,6 +1895,7 @@
             else if (state.currentTab === 'add') {
                 renderAddForm();
                 setupStoreAutoFill();
+                setupDropZone();
             }
             else if (state.currentTab === 'settings') renderSettings();
         }
