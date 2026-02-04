@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Return Window Tracker</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-hover: #22252f;
+            --border: #2a2d3a;
+            --text: #e4e4e7;
+            --text-muted: #8b8d98;
+            --accent: #6c8cff;
+            --accent-hover: #5a7aee;
+            --red: #ef4444;
+            --red-bg: #2d1518;
+            --red-border: #5c2226;
+            --orange: #f59e0b;
+            --orange-bg: #2d2213;
+            --orange-border: #5c4a1a;
+            --yellow: #eab308;
+            --yellow-bg: #2a2813;
+            --yellow-border: #544e1a;
+            --green: #22c55e;
+            --green-bg: #132d1a;
+            --green-border: #1a5c2a;
+            --gray: #52525b;
+            --gray-bg: #1e1e24;
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 16px 100px;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 0 12px;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 50;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 4px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Filter pills */
+        .filter-bar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .filter-pill {
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-pill.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(108, 140, 255, 0.1);
+        }
+
+        .filter-pill .count {
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+
+        /* Item cards */
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .item-card:hover {
+            background: var(--surface-hover);
+        }
+
+        .item-card.urgent-critical {
+            border-left: 3px solid var(--red);
+        }
+
+        .item-card.urgent-warning {
+            border-left: 3px solid var(--orange);
+        }
+
+        .item-card.urgent-soon {
+            border-left: 3px solid var(--yellow);
+        }
+
+        .item-card.urgent-ok {
+            border-left: 3px solid var(--green);
+        }
+
+        .item-card.expired {
+            border-left: 3px solid var(--gray);
+            opacity: 0.6;
+        }
+
+        .item-card.returned {
+            border-left: 3px solid var(--accent);
+            opacity: 0.6;
+        }
+
+        .item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .item-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .item-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .badge-critical {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid var(--red-border);
+        }
+
+        .badge-warning {
+            background: var(--orange-bg);
+            color: var(--orange);
+            border: 1px solid var(--orange-border);
+        }
+
+        .badge-soon {
+            background: var(--yellow-bg);
+            color: var(--yellow);
+            border: 1px solid var(--yellow-border);
+        }
+
+        .badge-ok {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid var(--green-border);
+        }
+
+        .badge-expired {
+            background: var(--gray-bg);
+            color: var(--gray);
+            border: 1px solid var(--border);
+        }
+
+        .badge-returned {
+            background: rgba(108, 140, 255, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(108, 140, 255, 0.3);
+        }
+
+        .item-meta {
+            display: flex;
+            gap: 14px;
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .item-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .item-details {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .item-card.expanded .item-details {
+            display: block;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+        }
+
+        .detail-label {
+            color: var(--text-muted);
+        }
+
+        .item-notes {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .action-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .action-btn.return-btn:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .action-btn.delete-btn:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 16px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+        }
+
+        /* Add Form */
+        .form-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .form-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .store-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .store-preset {
+            padding: 4px 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .store-preset:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-top: 4px;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Settings page */
+        .settings-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .settings-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-title {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .setting-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .toggle {
+            width: 42px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: none;
+        }
+
+        .toggle.on {
+            background: var(--accent);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.2s;
+        }
+
+        .toggle.on::after {
+            transform: translateX(18px);
+        }
+
+        .custom-store-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .custom-store-row input {
+            flex: 1;
+            padding: 7px 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .custom-store-row input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .small-btn {
+            padding: 7px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .small-btn:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .small-btn.danger:hover {
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        .small-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .store-list {
+            margin-top: 8px;
+        }
+
+        .store-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        .store-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .store-days {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .danger-zone {
+            margin-top: 20px;
+        }
+
+        .danger-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid var(--red-border);
+            color: var(--red);
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        .danger-btn:hover {
+            background: var(--red-bg);
+        }
+
+        /* Confirm dialog */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .dialog {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            max-width: 340px;
+            width: 100%;
+        }
+
+        .dialog h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .dialog p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .dialog-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .dialog-actions button {
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+        }
+
+        .dialog-actions button:hover {
+            color: var(--text);
+        }
+
+        .dialog-actions .confirm-danger {
+            background: var(--red);
+            border-color: var(--red);
+            color: #fff;
+        }
+
+        .dialog-actions .confirm-danger:hover {
+            opacity: 0.9;
+            color: #fff;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 20px;
+            font-size: 13px;
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Bottom nav (mobile feel) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: none;
+            z-index: 50;
+        }
+
+        /* Edit form */
+        .edit-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 90;
+            overflow-y: auto;
+        }
+
+        .edit-overlay.active {
+            display: block;
+        }
+
+        .edit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 1;
+        }
+
+        .edit-header h2 {
+            font-size: 17px;
+        }
+
+        .edit-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .edit-body {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 480px) {
+            .app {
+                padding: 0 12px 100px;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>Return Tracker</h1>
+            <div class="header-sub">Never miss a return window</div>
+        </header>
+
+        <div class="stats-bar" id="statsBar"></div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('items')">Items</button>
+            <button class="tab-btn" onclick="switchTab('add')">Add New</button>
+            <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <div id="tab-items" class="tab-content active"></div>
+        <div id="tab-add" class="tab-content"></div>
+        <div id="tab-settings" class="tab-content"></div>
+    </div>
+
+    <div class="overlay" id="confirmOverlay">
+        <div class="dialog" id="confirmDialog"></div>
+    </div>
+
+    <div class="edit-overlay" id="editOverlay">
+        <div class="edit-header">
+            <h2>Edit Item</h2>
+            <button class="edit-close" onclick="closeEdit()">&times;</button>
+        </div>
+        <div class="edit-body" id="editBody"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ── Default store return policies (days) ──
+        const DEFAULT_STORES = {
+            'Amazon': 30,
+            'Apple': 14,
+            'Best Buy': 15,
+            'Costco': 90,
+            'Home Depot': 90,
+            'IKEA': 365,
+            'Kohls': 180,
+            'Lowes': 90,
+            'Macys': 90,
+            'Nordstrom': 40,
+            'REI': 365,
+            'Target': 90,
+            'Walmart': 90,
+        };
+
+        // ── State ──
+        let state = {
+            items: [],
+            settings: {
+                stores: { ...DEFAULT_STORES },
+                reminderDays: [1, 3, 7],
+            },
+            currentTab: 'items',
+            currentFilter: 'active',
+        };
+
+        // ── Persistence ──
+        const STORAGE_KEY = 'returnTrackerState';
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state.items = parsed.items || [];
+                    if (parsed.settings) {
+                        state.settings.stores = parsed.settings.stores || { ...DEFAULT_STORES };
+                        state.settings.reminderDays = parsed.settings.reminderDays || [1, 3, 7];
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    items: state.items,
+                    settings: state.settings,
+                }));
+            } catch (e) {
+                console.error('Failed to save state:', e);
+            }
+        }
+
+        // ── Helpers ──
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        }
+
+        function daysBetween(date1, date2) {
+            const d1 = new Date(date1);
+            const d2 = new Date(date2);
+            d1.setHours(0, 0, 0, 0);
+            d2.setHours(0, 0, 0, 0);
+            return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+        }
+
+        function getReturnDeadline(item) {
+            const purchase = new Date(item.purchaseDate + 'T00:00:00');
+            const deadline = new Date(purchase);
+            deadline.setDate(deadline.getDate() + item.returnWindow);
+            return deadline;
+        }
+
+        function getDaysRemaining(item) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const deadline = getReturnDeadline(item);
+            deadline.setHours(0, 0, 0, 0);
+            return Math.round((deadline - today) / (1000 * 60 * 60 * 24));
+        }
+
+        function getUrgency(item) {
+            if (item.status === 'returned') return 'returned';
+            const days = getDaysRemaining(item);
+            if (days < 0) return 'expired';
+            if (days <= 3) return 'critical';
+            if (days <= 7) return 'warning';
+            if (days <= 14) return 'soon';
+            return 'ok';
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatCurrency(amount) {
+            if (!amount && amount !== 0) return '';
+            return '$' + Number(amount).toFixed(2);
+        }
+
+        function todayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        // ── Sorting and filtering ──
+        function getFilteredItems() {
+            let items = [...state.items];
+
+            if (state.currentFilter === 'active') {
+                items = items.filter(i => i.status !== 'returned' && getDaysRemaining(i) >= 0);
+            } else if (state.currentFilter === 'expiring') {
+                items = items.filter(i => i.status !== 'returned' && getDaysRemaining(i) >= 0 && getDaysRemaining(i) <= 7);
+            } else if (state.currentFilter === 'returned') {
+                items = items.filter(i => i.status === 'returned');
+            } else if (state.currentFilter === 'expired') {
+                items = items.filter(i => i.status !== 'returned' && getDaysRemaining(i) < 0);
+            }
+
+            // Sort: most urgent first
+            items.sort((a, b) => {
+                const aDays = getDaysRemaining(a);
+                const bDays = getDaysRemaining(b);
+                // Returned items go to end
+                if (a.status === 'returned' && b.status !== 'returned') return 1;
+                if (b.status === 'returned' && a.status !== 'returned') return -1;
+                return aDays - bDays;
+            });
+
+            return items;
+        }
+
+        function getCounts() {
+            const active = state.items.filter(i => i.status !== 'returned' && getDaysRemaining(i) >= 0);
+            const expiring = active.filter(i => getDaysRemaining(i) <= 7);
+            const returned = state.items.filter(i => i.status === 'returned');
+            const expired = state.items.filter(i => i.status !== 'returned' && getDaysRemaining(i) < 0);
+            const refundable = active.reduce((sum, i) => sum + (i.price || 0), 0);
+            return { active: active.length, expiring: expiring.length, returned: returned.length, expired: expired.length, refundable };
+        }
+
+        // ── Render ──
+        function renderStats() {
+            const counts = getCounts();
+            document.getElementById('statsBar').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${counts.active}</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: ${counts.expiring > 0 ? 'var(--orange)' : 'var(--text)'}">${counts.expiring}</div>
+                    <div class="stat-label">Expiring Soon</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${counts.refundable > 0 ? formatCurrency(counts.refundable) : '$0'}</div>
+                    <div class="stat-label">Refundable</div>
+                </div>
+            `;
+        }
+
+        function renderItems() {
+            const container = document.getElementById('tab-items');
+            const counts = getCounts();
+            const filtered = getFilteredItems();
+
+            let html = `<div class="filter-bar">
+                <button class="filter-pill ${state.currentFilter === 'active' ? 'active' : ''}" onclick="setFilter('active')">Active<span class="count">${counts.active}</span></button>
+                <button class="filter-pill ${state.currentFilter === 'expiring' ? 'active' : ''}" onclick="setFilter('expiring')">Expiring Soon<span class="count">${counts.expiring}</span></button>
+                <button class="filter-pill ${state.currentFilter === 'returned' ? 'active' : ''}" onclick="setFilter('returned')">Returned<span class="count">${counts.returned}</span></button>
+                <button class="filter-pill ${state.currentFilter === 'expired' ? 'active' : ''}" onclick="setFilter('expired')">Expired<span class="count">${counts.expired}</span></button>
+            </div>`;
+
+            if (filtered.length === 0) {
+                const messages = {
+                    active: { title: 'No active items', desc: 'Add a purchase to start tracking return windows.' },
+                    expiring: { title: 'Nothing expiring soon', desc: 'No items with return windows closing in the next 7 days.' },
+                    returned: { title: 'No returned items', desc: 'Items you mark as returned will appear here.' },
+                    expired: { title: 'No expired items', desc: 'No return windows have passed yet.' },
+                };
+                const msg = messages[state.currentFilter];
+                html += `<div class="empty-state">
+                    <div class="empty-state-icon">${state.currentFilter === 'active' ? '\u{1F4E6}' : state.currentFilter === 'returned' ? '\u2705' : '\u{1F552}'}</div>
+                    <h3>${msg.title}</h3>
+                    <p>${msg.desc}</p>
+                </div>`;
+            } else {
+                html += '<div class="item-list">';
+                for (const item of filtered) {
+                    const urgency = getUrgency(item);
+                    const daysLeft = getDaysRemaining(item);
+                    const deadline = getReturnDeadline(item);
+                    const deadlineStr = deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                    let badgeClass, badgeText, cardClass;
+                    if (urgency === 'returned') {
+                        badgeClass = 'badge-returned'; badgeText = 'Returned'; cardClass = 'returned';
+                    } else if (urgency === 'expired') {
+                        badgeClass = 'badge-expired'; badgeText = 'Expired'; cardClass = 'expired';
+                    } else if (urgency === 'critical') {
+                        badgeClass = 'badge-critical';
+                        badgeText = daysLeft === 0 ? 'Last day!' : daysLeft === 1 ? '1 day left' : daysLeft + ' days left';
+                        cardClass = 'urgent-critical';
+                    } else if (urgency === 'warning') {
+                        badgeClass = 'badge-warning'; badgeText = daysLeft + ' days left'; cardClass = 'urgent-warning';
+                    } else if (urgency === 'soon') {
+                        badgeClass = 'badge-soon'; badgeText = daysLeft + ' days left'; cardClass = 'urgent-soon';
+                    } else {
+                        badgeClass = 'badge-ok'; badgeText = daysLeft + ' days left'; cardClass = 'urgent-ok';
+                    }
+
+                    html += `<div class="item-card ${cardClass}" id="card-${item.id}" onclick="toggleExpand('${item.id}')">
+                        <div class="item-top">
+                            <div class="item-name">${escapeHtml(item.name)}</div>
+                            <span class="item-badge ${badgeClass}">${badgeText}</span>
+                        </div>
+                        <div class="item-meta">
+                            <span>${escapeHtml(item.store)}</span>
+                            ${item.price ? '<span>' + formatCurrency(item.price) + '</span>' : ''}
+                            <span>Due ${deadlineStr}</span>
+                        </div>
+                        <div class="item-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Purchased</span>
+                                <span>${formatDate(item.purchaseDate)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Return window</span>
+                                <span>${item.returnWindow} days</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Deadline</span>
+                                <span>${formatDate(deadline.getFullYear() + '-' + String(deadline.getMonth()+1).padStart(2,'0') + '-' + String(deadline.getDate()).padStart(2,'0'))}</span>
+                            </div>
+                            ${item.notes ? '<div class="item-notes">' + escapeHtml(item.notes) + '</div>' : ''}
+                            <div class="item-actions">
+                                ${item.status !== 'returned' ? `<button class="action-btn return-btn" onclick="event.stopPropagation(); markReturned('${item.id}')">Mark Returned</button>` : `<button class="action-btn" onclick="event.stopPropagation(); unmarkReturned('${item.id}')">Undo Return</button>`}
+                                <button class="action-btn" onclick="event.stopPropagation(); openEdit('${item.id}')">Edit</button>
+                                <button class="action-btn delete-btn" onclick="event.stopPropagation(); confirmDelete('${item.id}')">Delete</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderAddForm() {
+            const container = document.getElementById('tab-add');
+            const storeNames = Object.keys(state.settings.stores).sort();
+
+            container.innerHTML = `
+                <div class="form-section">
+                    <h3>New Purchase</h3>
+                    <div class="form-group">
+                        <label for="addName">Item name *</label>
+                        <input type="text" id="addName" placeholder="e.g. Wireless headphones">
+                    </div>
+                    <div class="form-group">
+                        <label for="addStore">Store *</label>
+                        <input type="text" id="addStore" placeholder="e.g. Amazon" list="storeList">
+                        <datalist id="storeList">
+                            ${storeNames.map(s => `<option value="${escapeHtml(s)}">`).join('')}
+                        </datalist>
+                        <div class="store-presets">
+                            ${storeNames.map(s => `<button class="store-preset" onclick="selectStore('${escapeHtml(s)}')">${escapeHtml(s)}</button>`).join('')}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="addDate">Purchase date *</label>
+                            <input type="date" id="addDate" value="${todayStr()}">
+                        </div>
+                        <div class="form-group">
+                            <label for="addWindow">Return window (days) *</label>
+                            <input type="number" id="addWindow" min="1" max="3650" placeholder="30">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="addPrice">Price ($)</label>
+                        <input type="number" id="addPrice" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="addNotes">Notes</label>
+                        <textarea id="addNotes" placeholder="Order #, reason for possible return, etc."></textarea>
+                    </div>
+                    <button class="submit-btn" onclick="addItem()">Add Item</button>
+                </div>
+            `;
+        }
+
+        function renderSettings() {
+            const container = document.getElementById('tab-settings');
+            const storeNames = Object.keys(state.settings.stores).sort();
+
+            container.innerHTML = `
+                <div class="settings-section">
+                    <h3>Store Return Policies</h3>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Presets auto-fill the return window when adding items.</p>
+                    <div class="store-list">
+                        ${storeNames.map(name => `
+                            <div class="store-list-item">
+                                <span>${escapeHtml(name)}</span>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="store-days">${state.settings.stores[name]} days</span>
+                                    ${DEFAULT_STORES[name] !== undefined ? '' : `<button class="small-btn danger" onclick="removeStore('${escapeHtml(name)}')" title="Remove">&times;</button>`}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Add Custom Store</h3>
+                    <div class="custom-store-row">
+                        <input type="text" id="newStoreName" placeholder="Store name">
+                        <input type="number" id="newStoreDays" placeholder="Days" style="max-width:80px" min="1">
+                        <button class="small-btn primary" onclick="addStore()">Add</button>
+                    </div>
+                </div>
+                <div class="settings-section danger-zone">
+                    <h3>Data</h3>
+                    <button class="danger-btn" onclick="confirmClearAll()">Clear All Items</button>
+                </div>
+            `;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ── Tab switching ──
+        function switchTab(tab) {
+            state.currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', ['items', 'add', 'settings'][i] === tab);
+            });
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            render();
+        }
+
+        function setFilter(filter) {
+            state.currentFilter = filter;
+            renderItems();
+        }
+
+        // ── Item interactions ──
+        function toggleExpand(id) {
+            const card = document.getElementById('card-' + id);
+            if (card) card.classList.toggle('expanded');
+        }
+
+        function selectStore(name) {
+            const storeInput = document.getElementById('addStore');
+            const windowInput = document.getElementById('addWindow');
+            if (storeInput) storeInput.value = name;
+            if (windowInput && state.settings.stores[name]) {
+                windowInput.value = state.settings.stores[name];
+            }
+        }
+
+        function addItem() {
+            const name = document.getElementById('addName').value.trim();
+            const store = document.getElementById('addStore').value.trim();
+            const date = document.getElementById('addDate').value;
+            const window = parseInt(document.getElementById('addWindow').value);
+            const price = parseFloat(document.getElementById('addPrice').value) || 0;
+            const notes = document.getElementById('addNotes').value.trim();
+
+            if (!name) { showToast('Please enter an item name'); return; }
+            if (!store) { showToast('Please enter a store'); return; }
+            if (!date) { showToast('Please select a purchase date'); return; }
+            if (!window || window < 1) { showToast('Please enter a valid return window'); return; }
+
+            state.items.push({
+                id: generateId(),
+                name,
+                store,
+                purchaseDate: date,
+                returnWindow: window,
+                price,
+                notes,
+                status: 'active',
+                createdAt: Date.now(),
+            });
+
+            saveState();
+            showToast('Item added');
+            switchTab('items');
+        }
+
+        function markReturned(id) {
+            const item = state.items.find(i => i.id === id);
+            if (item) {
+                item.status = 'returned';
+                saveState();
+                render();
+                showToast('Marked as returned');
+            }
+        }
+
+        function unmarkReturned(id) {
+            const item = state.items.find(i => i.id === id);
+            if (item) {
+                item.status = 'active';
+                saveState();
+                render();
+                showToast('Return undone');
+            }
+        }
+
+        function confirmDelete(id) {
+            const item = state.items.find(i => i.id === id);
+            if (!item) return;
+            showConfirm(
+                'Delete Item',
+                `Remove "${escapeHtml(item.name)}" from tracking?`,
+                () => {
+                    state.items = state.items.filter(i => i.id !== id);
+                    saveState();
+                    render();
+                    showToast('Item deleted');
+                }
+            );
+        }
+
+        // ── Edit ──
+        function openEdit(id) {
+            const item = state.items.find(i => i.id === id);
+            if (!item) return;
+
+            const storeNames = Object.keys(state.settings.stores).sort();
+            const overlay = document.getElementById('editOverlay');
+            const body = document.getElementById('editBody');
+
+            body.innerHTML = `
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="editName">Item name</label>
+                        <input type="text" id="editName" value="${escapeHtml(item.name)}">
+                    </div>
+                    <div class="form-group">
+                        <label for="editStore">Store</label>
+                        <input type="text" id="editStore" value="${escapeHtml(item.store)}" list="editStoreList">
+                        <datalist id="editStoreList">
+                            ${storeNames.map(s => `<option value="${escapeHtml(s)}">`).join('')}
+                        </datalist>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editDate">Purchase date</label>
+                            <input type="date" id="editDate" value="${item.purchaseDate}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editWindow">Return window (days)</label>
+                            <input type="number" id="editWindow" min="1" value="${item.returnWindow}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPrice">Price ($)</label>
+                        <input type="number" id="editPrice" min="0" step="0.01" value="${item.price || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="editNotes">Notes</label>
+                        <textarea id="editNotes">${escapeHtml(item.notes || '')}</textarea>
+                    </div>
+                    <button class="submit-btn" onclick="saveEdit('${item.id}')">Save Changes</button>
+                </div>
+            `;
+
+            overlay.classList.add('active');
+        }
+
+        function closeEdit() {
+            document.getElementById('editOverlay').classList.remove('active');
+        }
+
+        function saveEdit(id) {
+            const item = state.items.find(i => i.id === id);
+            if (!item) return;
+
+            const name = document.getElementById('editName').value.trim();
+            const store = document.getElementById('editStore').value.trim();
+            const date = document.getElementById('editDate').value;
+            const win = parseInt(document.getElementById('editWindow').value);
+            const price = parseFloat(document.getElementById('editPrice').value) || 0;
+            const notes = document.getElementById('editNotes').value.trim();
+
+            if (!name || !store || !date || !win) {
+                showToast('Please fill in all required fields');
+                return;
+            }
+
+            item.name = name;
+            item.store = store;
+            item.purchaseDate = date;
+            item.returnWindow = win;
+            item.price = price;
+            item.notes = notes;
+
+            saveState();
+            closeEdit();
+            render();
+            showToast('Item updated');
+        }
+
+        // ── Store management ──
+        function addStore() {
+            const name = document.getElementById('newStoreName').value.trim();
+            const days = parseInt(document.getElementById('newStoreDays').value);
+            if (!name) { showToast('Enter a store name'); return; }
+            if (!days || days < 1) { showToast('Enter valid return days'); return; }
+            state.settings.stores[name] = days;
+            saveState();
+            renderSettings();
+            showToast('Store added');
+        }
+
+        function removeStore(name) {
+            delete state.settings.stores[name];
+            saveState();
+            renderSettings();
+            showToast('Store removed');
+        }
+
+        // ── Confirm dialog ──
+        let confirmCallback = null;
+
+        function showConfirm(title, message, onConfirm) {
+            confirmCallback = onConfirm;
+            document.getElementById('confirmDialog').innerHTML = `
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="dialog-actions">
+                    <button onclick="hideConfirm()">Cancel</button>
+                    <button class="confirm-danger" onclick="execConfirm()">Delete</button>
+                </div>
+            `;
+            document.getElementById('confirmOverlay').classList.add('active');
+        }
+
+        function hideConfirm() {
+            document.getElementById('confirmOverlay').classList.remove('active');
+            confirmCallback = null;
+        }
+
+        function execConfirm() {
+            if (confirmCallback) confirmCallback();
+            hideConfirm();
+        }
+
+        function confirmClearAll() {
+            showConfirm(
+                'Clear All Items',
+                'This will permanently delete all tracked items. This cannot be undone.',
+                () => {
+                    state.items = [];
+                    saveState();
+                    render();
+                    showToast('All items cleared');
+                }
+            );
+        }
+
+        // ── Auto-fill return window when store is typed ──
+        function setupStoreAutoFill() {
+            const storeInput = document.getElementById('addStore');
+            if (!storeInput) return;
+            storeInput.addEventListener('change', () => {
+                const name = storeInput.value.trim();
+                const windowInput = document.getElementById('addWindow');
+                if (state.settings.stores[name] && windowInput && !windowInput.value) {
+                    windowInput.value = state.settings.stores[name];
+                }
+            });
+        }
+
+        // ── Render everything ──
+        function render() {
+            renderStats();
+            if (state.currentTab === 'items') renderItems();
+            else if (state.currentTab === 'add') {
+                renderAddForm();
+                setupStoreAutoFill();
+            }
+            else if (state.currentTab === 'settings') renderSettings();
+        }
+
+        // ── Init ──
+        function init() {
+            loadState();
+            render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
